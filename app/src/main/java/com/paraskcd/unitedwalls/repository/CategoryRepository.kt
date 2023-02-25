@@ -1,0 +1,41 @@
+package com.paraskcd.unitedwalls.repository
+
+import com.paraskcd.unitedwalls.data.DataOrException
+import com.paraskcd.unitedwalls.model.Category
+import com.paraskcd.unitedwalls.network.CategoryApi
+import javax.inject.Inject
+
+class CategoryRepository @Inject constructor(private val api: CategoryApi) {
+    private val allCategoriesDataOrException = DataOrException<ArrayList<Category>, Boolean, Exception>()
+    private val categoryDataOrException = DataOrException<Category, Boolean, Exception>()
+
+    suspend fun getCategories(): DataOrException<ArrayList<Category>, Boolean, java.lang.Exception> {
+        try {
+            allCategoriesDataOrException.loading = true
+            allCategoriesDataOrException.data = api.getCategoriesData()
+
+            if (allCategoriesDataOrException.data.toString().isNotEmpty()) {
+                allCategoriesDataOrException.loading = false
+            }
+        } catch (ex: Exception) {
+            allCategoriesDataOrException.e = ex
+        }
+
+        return allCategoriesDataOrException
+    }
+
+    suspend fun getCategoryById(categoryId: String): DataOrException<Category, Boolean, Exception> {
+        try {
+            categoryDataOrException.loading = true
+            categoryDataOrException.data = api.getCategoryById(categoryId)
+
+            if (categoryDataOrException.data.toString().isNotEmpty()) {
+                categoryDataOrException.loading = false
+            }
+        } catch (ex: Exception) {
+            categoryDataOrException.e = ex
+        }
+
+        return categoryDataOrException
+    }
+}

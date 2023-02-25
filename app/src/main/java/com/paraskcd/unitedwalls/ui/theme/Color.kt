@@ -1,0 +1,38 @@
+package com.paraskcd.unitedwalls.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
+
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
+
+val Rosewater = Color(0xFFF2D5CF)
+val Flamingo = Color(0xFFEEBEBE)
+val Pink = Color(0xFFF4B8E4)
+val Mauve = Color(0xFFCA9EE6)
+val Red = Color(0xFFE78284)
+val Maroon = Color(0xFFEA999C)
+val Peach = Color(0xFFEF9F76)
+val Yellow = Color(0xFFE5C890)
+val Green = Color(0xFFA6D189)
+val Teal = Color(0xFF81C8BE)
+val Sky = Color(0xFF99D1DB)
+val Sapphire = Color(0xFF85C1DC)
+val Blue = Color(0xFF8CAAEE)
+val Lavender = Color(0xFFBABBF1)
+val DarkText = Color(0xFFC6D0F5)
+val DarkSubtext0 = Color(0xFFA5ADCE)
+val DarkSubtext1 = Color(0xFFB5BFE2)
+val DarkPrimaryBG = Color(0xFF232634)
+val DarkSecondaryBG = Color(0xFF292C3C)
+val DarkTertiaryBG = Color(0xFF303446)
+val LightText = Color(0xFF4C4F69)
+val LightSubtext0 = Color(0xFF6C6F85)
+val LightSubtext1 = Color(0xFF5C5F77)
+val LightPrimaryBG = Color(0xFFEFF1F5)
+val LightSecondaryBG = Color(0xFFE6E9EF)
+val LightTertiaryBG = Color(0xFFDCE0E8)
