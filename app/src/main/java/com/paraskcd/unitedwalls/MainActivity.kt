@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
@@ -26,6 +25,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.runtime.*
 import com.paraskcd.unitedwalls.components.Drawer
 import com.paraskcd.unitedwalls.screens.About
+import com.paraskcd.unitedwalls.screens.Home
+import com.paraskcd.unitedwalls.screens.WallScreen
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
 
 @AndroidEntryPoint
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
             val categoryViewModel: CategoryViewModel = hiltViewModel()
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
             var screenActive: Int by remember { mutableStateOf(0) }
+            var categoryActive: String by remember { mutableStateOf("") }
+            var wallScreenActive: Boolean by remember { mutableStateOf(false) }
 
             UWallsTheme {
                 // A surface container using the 'background' color from the theme
@@ -47,23 +50,38 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Transparent,
-                                        Color.Transparent,
-                                        Color.Transparent,
-                                        MaterialTheme.colorScheme.primary
+                    ) {
+                        Home(
+                            openDrawer = { isDrawerActive = it },
+                            isDrawerActive = isDrawerActive,
+                            screenActive = screenActive,
+                            wallsViewModel = wallsViewModel,
+                            makeWallScreenActive = { wallScreenActive = it }
+                        )
+                        About(
+                            openDrawer = { isDrawerActive = it },
+                            isDrawerActive = isDrawerActive,
+                            screenActive = screenActive
+                        )
+                        TopBar(
+                            screenActive = screenActive,
+                            openDrawer = { isDrawerActive = it },
+                            openScreen = { screenActive = it },
+                            categoryViewModel = categoryViewModel,
+                            categoryActive = categoryActive
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.primary
+                                        )
                                     )
                                 )
-                            )
-                    ) {
-                        if (screenActive == 3) {
-                            About(openDrawer = { isDrawerActive = it }, isDrawerActive = isDrawerActive)
-                        }
-                        TopBar(
-                            openDrawer = { isDrawerActive = it }
                         )
                         AnimatedVisibility(
                             visible = isDrawerActive,
@@ -80,6 +98,11 @@ class MainActivity : ComponentActivity() {
                             categoryViewModel = categoryViewModel,
                             screenActive = screenActive,
                             openScreen = { screenActive = it }
+                        )
+                        WallScreen(
+                            wallScreenActive = wallScreenActive,
+                            makeWallScreenActive = { wallScreenActive = it },
+                            wallsViewModel = wallsViewModel
                         )
                     }
                 }

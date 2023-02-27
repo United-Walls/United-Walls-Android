@@ -30,6 +30,8 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
     private val _wallById = MutableLiveData<WallsItem>()
     private val _loadingWallById = MutableLiveData<Boolean>(true)
 
+    var selectedWallIndex: MutableState<Int> = mutableStateOf(0)
+
     val walls: LiveData<Walls>
         get() = _walls
     val loadingWalls: LiveData<Boolean>
@@ -56,6 +58,9 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
                 _loadingWalls.value = false
                 _walls.value = wallsData.value.data
                 Log.d("Walls", walls.value.toString())
+                wallsData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
             }
         }
     }
@@ -71,5 +76,9 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
                 _wallById.value = wallByIdData.value.data
             }
         }
+    }
+
+    fun selectWallIndex(index: Int) {
+        selectedWallIndex.value = index
     }
 }
