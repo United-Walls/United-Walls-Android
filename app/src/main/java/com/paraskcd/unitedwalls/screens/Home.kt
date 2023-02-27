@@ -1,9 +1,18 @@
 package com.paraskcd.unitedwalls.screens
 
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,11 +30,23 @@ import androidx.compose.ui.unit.dp
 import com.paraskcd.unitedwalls.components.Screen
 import com.paraskcd.unitedwalls.components.WallpaperImage
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
+import dev.chrisbanes.snapper.ExperimentalSnapperApi
+import dev.chrisbanes.snapper.SnapOffsets
+import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
+import java.io.IOException
 
+@OptIn(ExperimentalSnapperApi::class)
 @Composable
-fun Home(openDrawer: (Boolean) -> Unit, isDrawerActive: Boolean, screenActive: Int, wallsViewModel: WallsViewModel, makeWallScreenActive: (Boolean) -> Unit) {
+fun Home(
+    openDrawer: (Boolean) -> Unit,
+    isDrawerActive: Boolean,
+    screenActive: Int,
+    wallsViewModel: WallsViewModel,
+    makeWallScreenActive: (Boolean) -> Unit
+) {
     val walls = wallsViewModel.walls.observeAsState().value
     val loadingWalls = wallsViewModel.loadingWalls.observeAsState().value
+    val lazyListState = rememberLazyListState()
 
     Screen(
         openDrawer = openDrawer,
@@ -41,7 +62,13 @@ fun Home(openDrawer: (Boolean) -> Unit, isDrawerActive: Boolean, screenActive: I
                 )
             }
         }
-        LazyColumn {
+        LazyColumn(
+            state = lazyListState,
+            flingBehavior = rememberSnapperFlingBehavior(
+                lazyListState = lazyListState,
+                snapOffsetForItem = SnapOffsets.Center,
+            )
+        ) {
             walls?.size?.let {
                 items(it) { index ->
                     val wall = walls[index]
@@ -56,6 +83,8 @@ fun Home(openDrawer: (Boolean) -> Unit, isDrawerActive: Boolean, screenActive: I
                                     if (!isDrawerActive) {
                                         wallsViewModel.selectWallIndex(index)
                                         makeWallScreenActive(true)
+                                    } else {
+                                        openDrawer(false)
                                     }
                                 },
                             contentAlignment = Alignment.BottomStart
