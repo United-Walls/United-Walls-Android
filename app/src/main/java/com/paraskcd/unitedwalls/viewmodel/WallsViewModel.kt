@@ -8,11 +8,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paraskcd.unitedwalls.data.DataOrException
+import com.paraskcd.unitedwalls.model.FavouriteWallsTable
 import com.paraskcd.unitedwalls.model.Walls
 import com.paraskcd.unitedwalls.model.WallsItem
 import com.paraskcd.unitedwalls.repository.WallsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +35,9 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
     private val _wallById = MutableLiveData<WallsItem>()
     private val _loadingWallById = MutableLiveData<Boolean>(true)
 
+    private val _favouriteWalls = MutableStateFlow<List<FavouriteWallsTable>>(emptyList())
+    val favouriteWalls = _favouriteWalls.asStateFlow()
+
     var selectedWallIndex: MutableState<Int> = mutableStateOf(0)
 
     val walls: LiveData<Walls>
@@ -45,6 +53,7 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
     init {
         viewModelScope.launch(Dispatchers.IO) {
             getWallsData()
+            getFavouriteWalls()
         }
     }
 
@@ -80,5 +89,31 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
 
     fun selectWallIndex(index: Int) {
         selectedWallIndex.value = index
+    }
+
+    fun getFavouriteWalls() {
+        viewModelScope.launch {
+            wallsRepository.getAllFavouriteWallpapers().distinctUntilChanged().collect {
+                listOfFavouriteWalls ->
+                if (listOfFavouriteWalls.isEmpty()) {
+                    _favouriteWalls.value = emptyList()
+                } else {
+                    Log.d("Favourite Walls", listOfFavouriteWalls.toString())
+                    _favouriteWalls.value = listOfFavouriteWalls
+                }
+            }
+        }
+    }
+
+    fun addWallToFavourites(wallId: String) {
+        viewModelScope.launch {
+            wallsRepository.favouriteAWallpaper(FavouriteWallsTable(wallpaperId = wallId))
+        }
+    }
+
+    fun removeWallFromFavourites(wall: FavouriteWallsTable) {
+        viewModelScope.launch {
+            wallsRepository.unfavouriteAWallpaper(wall)
+        }
     }
 }

@@ -25,7 +25,7 @@ fun TopBar(
     openDrawer: (Boolean) -> Unit,
     openScreen: (Int) -> Unit,
     categoryViewModel: CategoryViewModel,
-    categoryActive: String
+    categoryActive: String?
 ) {
     val categories = categoryViewModel.categories.observeAsState().value
     val loadingCategories = categoryViewModel.loadingCategories.observeAsState().value

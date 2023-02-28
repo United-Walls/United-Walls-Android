@@ -1,11 +1,14 @@
 package com.paraskcd.unitedwalls.repository
 
 import com.paraskcd.unitedwalls.data.DataOrException
+import com.paraskcd.unitedwalls.data.UnitedWallsDatabaseDao
 import com.paraskcd.unitedwalls.model.Category
+import com.paraskcd.unitedwalls.model.PinnedCategoriesTable
 import com.paraskcd.unitedwalls.network.CategoryApi
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class CategoryRepository @Inject constructor(private val api: CategoryApi) {
+class CategoryRepository @Inject constructor(private val api: CategoryApi, private val dao: UnitedWallsDatabaseDao) {
     private val allCategoriesDataOrException = DataOrException<ArrayList<Category>, Boolean, Exception>()
     private val categoryDataOrException = DataOrException<Category, Boolean, Exception>()
 
@@ -38,4 +41,8 @@ class CategoryRepository @Inject constructor(private val api: CategoryApi) {
 
         return categoryDataOrException
     }
+
+    suspend fun pinCategory(category: PinnedCategoriesTable) = dao.addPinnedCategory(category)
+    suspend fun unpinCategory(category: PinnedCategoriesTable) = dao.deletePinnedCategory(category)
+    fun getAllPinnedCategories(): Flow<List<PinnedCategoriesTable>> = dao.getAllPinnedCategories()
 }

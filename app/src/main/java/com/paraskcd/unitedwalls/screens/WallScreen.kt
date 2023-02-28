@@ -35,6 +35,7 @@ import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
+import com.paraskcd.unitedwalls.model.FavouriteWallsTable
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import dev.chrisbanes.snapper.SnapOffsets
@@ -56,6 +57,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
     val screenWidth = configuration.screenWidthDp.dp
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
 
     LaunchedEffect(key1 = wallScreenActive) {
         Timer().schedule(0) {
@@ -93,6 +95,21 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                         val wall = walls[index]
 
                         wall.file_url?.let { fileURL ->
+                            var liked: Boolean by remember {
+                                mutableStateOf(false)
+                            }
+
+                            if (favouriteWalls.isNotEmpty()) {
+                                for (wallF in favouriteWalls) {
+                                    if (wallF.wallpaperId == wall._id) {
+                                        liked = true
+                                        break
+                                    } else {
+                                        liked = false
+                                    }
+                                }
+                            }
+
                             Box(
                                 modifier = Modifier
                                     .fillMaxHeight(),
@@ -113,19 +130,34 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                     modifier = Modifier.padding(end = 24.dp, bottom = 24.dp)
                                 ) {
                                     IconButton(
-                                        onClick = { /*TODO*/ },
+                                        onClick = {
+                                            if (!liked) {
+                                                wallsViewModel.addWallToFavourites(wall._id)
+                                                liked = true
+                                                Toast.makeText(context, "Wallpaper added to your Favourites! :)", Toast.LENGTH_LONG).show()
+                                            } else {
+                                                for (wallF in favouriteWalls) {
+                                                    if (wall._id == wallF.wallpaperId) {
+                                                        wallsViewModel.removeWallFromFavourites(wallF)
+                                                        liked = false
+                                                        Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
+                                                        break
+                                                    }
+                                                }
+                                            }
+                                        },
                                         colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(60.dp)
-                                            .height(64.dp)
+                                            .width(40.dp)
+                                            .height(40.dp)
                                             .padding(bottom = 6.dp)
                                             .alpha(0.50f)
                                     ) {
                                         Image(
-                                            painter = painterResource(id = R.drawable.heart),
+                                            painter = painterResource(id = if (!liked) R.drawable.heart else R.drawable.heartfilled),
                                             contentDescription = "Favourite",
                                             modifier = Modifier
-                                                .padding(12.dp)
-                                                .size(30.dp)
+                                                .padding(6.dp)
+                                                .size(40.dp)
                                         )
                                     }
                                     IconButton(
@@ -140,8 +172,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             context.startActivity(shareIntent)
                                         },
                                         colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(60.dp)
-                                            .height(64.dp)
+                                            .width(40.dp)
+                                            .height(40.dp)
                                             .padding(bottom = 6.dp)
                                             .alpha(0.50f)
                                     ) {
@@ -149,8 +181,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             painter = painterResource(id = R.drawable.share),
                                             contentDescription = "Favourite",
                                             modifier = Modifier
-                                                .padding(12.dp)
-                                                .size(30.dp)
+                                                .padding(6.dp)
+                                                .size(40.dp)
                                         )
                                     }
                                     // Download Button
@@ -163,8 +195,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             }
                                         },
                                         colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(60.dp)
-                                            .height(64.dp)
+                                            .width(40.dp)
+                                            .height(40.dp)
                                             .padding(bottom = 6.dp)
                                             .alpha(0.50f)
                                     ) {
@@ -172,8 +204,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             painter = painterResource(id = R.drawable.download),
                                             contentDescription = "Favourite",
                                             modifier = Modifier
-                                                .padding(12.dp)
-                                                .size(30.dp)
+                                                .padding(6.dp)
+                                                .size(40.dp)
                                         )
                                     }
                                 }

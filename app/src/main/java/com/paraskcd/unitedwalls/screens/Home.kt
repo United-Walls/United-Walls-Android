@@ -27,8 +27,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.paraskcd.unitedwalls.BuildConfig
 import com.paraskcd.unitedwalls.components.Screen
 import com.paraskcd.unitedwalls.components.WallpaperImage
+import com.paraskcd.unitedwalls.utils.Constants
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import dev.chrisbanes.snapper.SnapOffsets
@@ -73,46 +79,59 @@ fun Home(
                 items(it) { index ->
                     val wall = walls[index]
                     
-                    wall.file_url?.let { fileURL -> 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 6.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    if (!isDrawerActive) {
-                                        wallsViewModel.selectWallIndex(index)
-                                        makeWallScreenActive(true)
-                                    } else {
-                                        openDrawer(false)
+                    wall.file_url?.let { fileURL ->
+                        Column {
+                            if (index % 2 == 0 && index > 0) {
+                                AndroidView(modifier = Modifier.fillMaxWidth().height(80.dp).padding(bottom = 6.dp).clip(
+                                    RoundedCornerShape(12.dp)
+                                ), factory = { context ->
+                                    AdView(context).apply {
+                                        setAdSize(AdSize.FLUID)
+                                        adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.PUBLIC_AD
+                                        loadAd(AdRequest.Builder().build())
                                     }
-                                },
-                            contentAlignment = Alignment.BottomStart
-                        ) {
-                            WallpaperImage(
-                                imageURL = fileURL,
-                                imageDescription = wall.file_name,
-                                height = 420.dp,
-                                extraKeys = "Home"
-                            )
+                                })
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(120.dp)
-                                    .background(
-                                        brush = Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.primary
+                                    .padding(bottom = 6.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        if (!isDrawerActive) {
+                                            wallsViewModel.selectWallIndex(index)
+                                            makeWallScreenActive(true)
+                                        } else {
+                                            openDrawer(false)
+                                        }
+                                    },
+                                contentAlignment = Alignment.BottomStart
+                            ) {
+                                WallpaperImage(
+                                    imageURL = fileURL,
+                                    imageDescription = wall.file_name,
+                                    height = 420.dp,
+                                    extraKeys = "Home"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(120.dp)
+                                        .background(
+                                            brush = Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    MaterialTheme.colorScheme.primary
+                                                )
                                             )
                                         )
-                                    )
-                                    .alpha(0.7f)
-                            )
-                            Text(
-                                text = wall.file_name,
-                                modifier = Modifier.padding(24.dp)
-                            )
+                                        .alpha(0.7f)
+                                )
+                                Text(
+                                    text = wall.file_name,
+                                    modifier = Modifier.padding(24.dp)
+                                )
+                            }
                         }
                     }
                 }

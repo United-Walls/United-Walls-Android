@@ -9,9 +9,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paraskcd.unitedwalls.data.DataOrException
 import com.paraskcd.unitedwalls.model.Category
+import com.paraskcd.unitedwalls.model.PinnedCategoriesTable
 import com.paraskcd.unitedwalls.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,6 +36,9 @@ class CategoryViewModel @Inject constructor(private val categoryRepository: Cate
     private val _categoryById = MutableLiveData<Category>()
     private val _loadingCategoryById = MutableLiveData<Boolean>(true)
 
+    private val _pinnedCategories = MutableStateFlow<List<PinnedCategoriesTable>>(emptyList())
+    val pinnedCategories = _pinnedCategories.asStateFlow()
+
     val categories: LiveData<ArrayList<Category>>
         get() = _categories
     val loadingCategories: LiveData<Boolean>
@@ -44,6 +52,7 @@ class CategoryViewModel @Inject constructor(private val categoryRepository: Cate
     init {
         viewModelScope.launch(Dispatchers.IO) {
             getCategoriesData()
+            getPinnedCategories()
         }
     }
 
@@ -71,6 +80,31 @@ class CategoryViewModel @Inject constructor(private val categoryRepository: Cate
                 _loadingCategoryById.value = false
                 _categoryById.value = categoryByIdData.value.data
             }
+        }
+    }
+
+    fun getPinnedCategories() {
+        viewModelScope.launch {
+            categoryRepository.getAllPinnedCategories().distinctUntilChanged().collect { listOfCategories ->
+                if (listOfCategories.isEmpty()) {
+                    _pinnedCategories.value = emptyList()
+                } else {
+                    Log.d("Pinned Categories", listOfCategories.toString())
+                    _pinnedCategories.value = listOfCategories
+                }
+            }
+        }
+    }
+
+    fun addPinToCategory(categoryId: String) {
+        viewModelScope.launch {
+            categoryRepository.pinCategory(PinnedCategoriesTable(categoryId = categoryId))
+        }
+    }
+
+    fun removePinFromCategory(category: PinnedCategoriesTable) {
+        viewModelScope.launch {
+            categoryRepository.unpinCategory(category)
         }
     }
 }

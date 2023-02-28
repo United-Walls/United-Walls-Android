@@ -24,7 +24,7 @@ import javax.inject.Singleton
 object AppModule {
     @Singleton
     @Provides
-    fun providesWallpapersRepository(api: WallsApi) = WallsRepository(api)
+    fun providesWallpapersRepository(api: WallsApi, dao: UnitedWallsDatabaseDao) = WallsRepository(api, dao)
 
     @Singleton
     @Provides
@@ -35,7 +35,7 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun providesCateogoriesRepository(api: CategoryApi) = CategoryRepository(api)
+    fun providesCateogoriesRepository(api: CategoryApi, dao: UnitedWallsDatabaseDao) = CategoryRepository(api, dao)
 
     @Singleton
     @Provides
