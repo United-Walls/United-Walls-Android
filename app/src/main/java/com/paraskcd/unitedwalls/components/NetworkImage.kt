@@ -22,6 +22,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 
 @Composable
@@ -61,11 +62,12 @@ fun NetworkImage(imageURL: String, imageDescription: String, size: Dp, shape: Sh
 }
 
 @Composable
-fun WallpaperImage(imageURL: String, imageDescription: String, height: Dp, extraKeys: String) {
+fun WallpaperImage(imageURL: String, imageDescription: String, height: Dp) {
     val context = LocalContext.current
 
     val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context = context).data(imageURL).diskCacheKey(imageURL + extraKeys).memoryCacheKey(imageURL + extraKeys).build(),
+        model = ImageRequest.Builder(context = context).data(imageURL).diskCacheKey(imageURL).memoryCacheKey(imageURL).memoryCachePolicy(
+            CachePolicy.ENABLED).build(),
         imageLoader = ImageLoader.Builder(context = context).components {
             if (Build.VERSION.SDK_INT >= 28) {
                 add(ImageDecoderDecoder.Factory())

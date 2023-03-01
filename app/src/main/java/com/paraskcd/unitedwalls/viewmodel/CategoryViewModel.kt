@@ -9,35 +9,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paraskcd.unitedwalls.data.DataOrException
 import com.paraskcd.unitedwalls.model.Category
-import com.paraskcd.unitedwalls.model.PinnedCategoriesTable
 import com.paraskcd.unitedwalls.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CategoryViewModel @Inject constructor(private val categoryRepository: CategoryRepository): ViewModel() {
-    val categoriesData: MutableState<DataOrException<ArrayList<Category>, Boolean, Exception>> = mutableStateOf(
+    private val categoriesData: MutableState<DataOrException<ArrayList<Category>, Boolean, Exception>> = mutableStateOf(
         DataOrException(null, true, Exception(""))
     )
 
-    val categoryByIdData: MutableState<DataOrException<Category, Boolean, Exception>> = mutableStateOf(
+    private val categoryByIdData: MutableState<DataOrException<Category, Boolean, Exception>> = mutableStateOf(
         DataOrException(null, true, Exception(""))
     )
 
     private val _categories = MutableLiveData<ArrayList<Category>>()
-    private val _loadingCategories = MutableLiveData<Boolean>(true)
+    private val _loadingCategories = MutableLiveData(true)
 
     private val _categoryById = MutableLiveData<Category>()
-    private val _loadingCategoryById = MutableLiveData<Boolean>(true)
-
-    private val _pinnedCategories = MutableStateFlow<List<PinnedCategoriesTable>>(emptyList())
-    val pinnedCategories = _pinnedCategories.asStateFlow()
+    private val _loadingCategoryById = MutableLiveData(true)
 
     val categories: LiveData<ArrayList<Category>>
         get() = _categories
@@ -52,11 +44,10 @@ class CategoryViewModel @Inject constructor(private val categoryRepository: Cate
     init {
         viewModelScope.launch(Dispatchers.IO) {
             getCategoriesData()
-            getPinnedCategories()
         }
     }
 
-    fun getCategoriesData() {
+    private fun getCategoriesData() {
         viewModelScope.launch {
             categoriesData.value.loading = true
             categoriesData.value = categoryRepository.getCategories()
@@ -83,28 +74,8 @@ class CategoryViewModel @Inject constructor(private val categoryRepository: Cate
         }
     }
 
-    fun getPinnedCategories() {
-        viewModelScope.launch {
-            categoryRepository.getAllPinnedCategories().distinctUntilChanged().collect { listOfCategories ->
-                if (listOfCategories.isEmpty()) {
-                    _pinnedCategories.value = emptyList()
-                } else {
-                    Log.d("Pinned Categories", listOfCategories.toString())
-                    _pinnedCategories.value = listOfCategories
-                }
-            }
-        }
-    }
-
-    fun addPinToCategory(categoryId: String) {
-        viewModelScope.launch {
-            categoryRepository.pinCategory(PinnedCategoriesTable(categoryId = categoryId))
-        }
-    }
-
-    fun removePinFromCategory(category: PinnedCategoriesTable) {
-        viewModelScope.launch {
-            categoryRepository.unpinCategory(category)
-        }
+    fun clearCategoryById() {
+        _loadingCategoryById.value = true
+        _categoryById.value = null
     }
 }

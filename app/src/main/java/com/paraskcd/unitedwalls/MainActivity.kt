@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
@@ -25,19 +24,15 @@ import com.paraskcd.unitedwalls.ui.theme.UWallsTheme
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.paraskcd.unitedwalls.components.Drawer
-import com.paraskcd.unitedwalls.screens.About
-import com.paraskcd.unitedwalls.screens.Categories
-import com.paraskcd.unitedwalls.screens.Home
-import com.paraskcd.unitedwalls.screens.WallScreen
+import com.paraskcd.unitedwalls.screens.*
 import com.paraskcd.unitedwalls.utils.Constants
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
 
@@ -48,11 +43,27 @@ class MainActivity : ComponentActivity() {
         setContent {
             val wallsViewModel: WallsViewModel = hiltViewModel()
             val categoryViewModel: CategoryViewModel = hiltViewModel()
+            val category = categoryViewModel.categoryById.observeAsState().value
+            val loadingCategory = categoryViewModel.loadingCategoryById.observeAsState().value
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
-            var isCategoryScreenActive: Boolean by remember { mutableStateOf(false) }
             var screenActive: Int by remember { mutableStateOf(0) }
             var categoryActive: String? by remember { mutableStateOf(null) }
             var wallScreenActive: Boolean by remember { mutableStateOf(false) }
+            var categoryWallScreenActive: Boolean by remember { mutableStateOf(false) }
+            var categoryWallIndex: Int by remember { mutableStateOf(0) }
+            var favouriteWallScreenActive: Boolean by remember {
+                mutableStateOf(false)
+            }
+
+            LaunchedEffect(key1 = screenActive == 4) {
+                if (categoryActive != null) {
+                    categoryViewModel.getCategoryById(categoryId = categoryActive!!)
+                }
+            }
+
+            LaunchedEffect(key1 = isDrawerActive == true) {
+                wallsViewModel.getPopulatedFavouriteWalls()
+            }
 
             UWallsTheme {
                 // A surface container using the 'background' color from the theme
@@ -71,15 +82,22 @@ class MainActivity : ComponentActivity() {
                             wallsViewModel = wallsViewModel,
                             makeWallScreenActive = { wallScreenActive = it }
                         )
+                        FavouriteWalls(
+                            openDrawer = { isDrawerActive = it },
+                            isDrawerActive = isDrawerActive,
+                            screenActive = screenActive,
+                            wallsViewModel = wallsViewModel,
+                            makeFavouriteWallsScreenActive = { favouriteWallScreenActive = it }
+                        )
                         Categories(
                             openDrawer = { isDrawerActive = it },
                             isDrawerActive = isDrawerActive,
                             screenActive = screenActive,
                             categoryViewModel = categoryViewModel,
-                            categoryActive = categoryActive,
-                            makeCategoryScreenActive = { active, id ->
-                                isCategoryScreenActive = active
-                                categoryActive = id
+                            makeCategoryScreenActive = {
+                                categoryViewModel.clearCategoryById()
+                                categoryActive = it
+                                screenActive = 4
                             }
                         )
                         About(
@@ -87,12 +105,21 @@ class MainActivity : ComponentActivity() {
                             isDrawerActive = isDrawerActive,
                             screenActive = screenActive
                         )
+                        CategoryScreen(
+                            openDrawer = { isDrawerActive = it },
+                            isDrawerActive = isDrawerActive,
+                            screenActive = screenActive,
+                            category = category,
+                            loadingCategory = loadingCategory,
+                            makeCategoryWallScreenActive = { flag, index ->
+                                categoryWallScreenActive = flag
+                                categoryWallIndex = index
+                            }
+                        )
                         TopBar(
                             screenActive = screenActive,
                             openDrawer = { isDrawerActive = it },
-                            openScreen = { screenActive = it },
-                            categoryViewModel = categoryViewModel,
-                            categoryActive = categoryActive
+                            openScreen = { screenActive = it }
                         )
                         Box(
                             modifier = Modifier
@@ -116,18 +143,6 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxSize()
                                 .background(Color(0xA5101010)))
                         }
-                        Drawer(
-                            isDrawerActive = isDrawerActive,
-                            openDrawer = { isDrawerActive = it },
-                            categoryViewModel = categoryViewModel,
-                            screenActive = screenActive,
-                            openScreen = { screenActive = it }
-                        )
-                        WallScreen(
-                            wallScreenActive = wallScreenActive,
-                            makeWallScreenActive = { wallScreenActive = it },
-                            wallsViewModel = wallsViewModel
-                        )
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                             AndroidView(modifier = Modifier.fillMaxWidth(), factory = { context ->
                                 AdView(context).apply {
@@ -141,6 +156,36 @@ class MainActivity : ComponentActivity() {
                                 }
                             })
                         }
+                        Drawer(
+                            isDrawerActive = isDrawerActive,
+                            openDrawer = { isDrawerActive = it },
+                            categoryViewModel = categoryViewModel,
+                            screenActive = screenActive,
+                            openScreen = { screenActive = it },
+                            makeCategoryScreenActive = {
+                                categoryViewModel.clearCategoryById()
+                                categoryActive = it
+                                screenActive = 4
+                                categoryViewModel.getCategoryById(it)
+                            }
+                        )
+                        WallScreen(
+                            wallScreenActive = wallScreenActive,
+                            makeWallScreenActive = { wallScreenActive = it },
+                            wallsViewModel = wallsViewModel
+                        )
+                        CategoryWallScreen(
+                            categoryWallScreenActive = categoryWallScreenActive,
+                            makeCategoryWallScreenActive = { categoryWallScreenActive = it },
+                            category = category,
+                            categoryWallIndex = categoryWallIndex,
+                            wallsViewModel = wallsViewModel
+                        )
+                        FavouriteWallScreen(
+                            favouriteWallScreenActive = favouriteWallScreenActive,
+                            makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
+                            wallsViewModel = wallsViewModel
+                        )
                     }
                 }
             }

@@ -46,7 +46,6 @@ import java.io.IOException
 import java.util.*
 import kotlin.concurrent.schedule
 
-
 @OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class)
 @Composable
 fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel) {
@@ -135,12 +134,14 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                 wallsViewModel.addWallToFavourites(wall._id)
                                                 liked = true
                                                 Toast.makeText(context, "Wallpaper added to your Favourites! :)", Toast.LENGTH_LONG).show()
+                                                wallsViewModel.getPopulatedFavouriteWalls()
                                             } else {
                                                 for (wallF in favouriteWalls) {
                                                     if (wall._id == wallF.wallpaperId) {
                                                         wallsViewModel.removeWallFromFavourites(wallF)
                                                         liked = false
                                                         Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
+                                                        wallsViewModel.getPopulatedFavouriteWalls()
                                                         break
                                                     }
                                                 }

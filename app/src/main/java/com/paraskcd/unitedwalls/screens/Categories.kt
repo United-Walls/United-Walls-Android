@@ -1,9 +1,11 @@
 package com.paraskcd.unitedwalls.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -13,7 +15,9 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.paraskcd.unitedwalls.components.Screen
 import com.paraskcd.unitedwalls.components.WallpaperImage
@@ -25,8 +29,7 @@ fun Categories(
     isDrawerActive: Boolean,
     screenActive: Int,
     categoryViewModel: CategoryViewModel,
-    categoryActive: String?,
-    makeCategoryScreenActive: (active: Boolean, id: String) -> Unit
+    makeCategoryScreenActive: (id: String) -> Unit
 ) {
     val categories = categoryViewModel.categories.observeAsState().value
     val loadingCategories = categoryViewModel.loadingCategories.observeAsState().value
@@ -51,10 +54,10 @@ fun Categories(
             columns = GridCells.Fixed(2)
         ) {
             item {
-                Spacer(modifier = Modifier.height(160.dp))
+                Spacer(modifier = Modifier.height(70.dp))
             }
             item {
-                Spacer(modifier = Modifier.height(160.dp))
+                Spacer(modifier = Modifier.height(70.dp))
             }
             categories?.size?.let {
                 items(it) { index ->
@@ -65,24 +68,26 @@ fun Categories(
                             .fillMaxWidth()
                             .height(100.dp)
                             .padding(12.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                makeCategoryScreenActive(category._id)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         category.walls[0].file_url?.let { fileURL ->
                             WallpaperImage(
                                 imageURL = fileURL,
                                 imageDescription = category.walls[0].file_name,
-                                height = 100.dp,
-                                extraKeys = "CategoryImage"
+                                height = 100.dp
                             )
                         }
                         Box(
                             modifier = Modifier
-                            .alpha(0.7F)
+                            .alpha(0.75F)
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.primary)
                         )
-                        Text(text = category.name)
+                        Text(text = category.name, fontWeight = FontWeight.Bold)
                     }
                 }
             }

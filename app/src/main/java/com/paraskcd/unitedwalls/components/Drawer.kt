@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -31,7 +34,8 @@ fun Drawer(
     openDrawer: (Boolean) -> Unit,
     categoryViewModel: CategoryViewModel,
     screenActive: Int,
-    openScreen: (Int) -> Unit
+    openScreen: (Int) -> Unit,
+    makeCategoryScreenActive: (id: String) -> Unit
 ) {
     var pinnedSize: Dp by remember { mutableStateOf(0.dp) }
     val categories = categoryViewModel.categories.observeAsState().value
@@ -58,7 +62,7 @@ fun Drawer(
                 + shrinkHorizontally()
                 + fadeOut()
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(270.dp)
@@ -74,103 +78,90 @@ fun Drawer(
                 ),
             horizontalAlignment = Alignment.Start
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.drawerbg),
-                contentDescription = "DrawerBanner",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(172.dp),
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.Center
-            )
-            DrawerItem(
-                onClick = {
-                    openDrawer(false)
-                    openScreen(it)
-                },
-                icon = painterResource(id = R.drawable.home),
-                iconDescription = "Home Icon",
-                title = "Home",
-                screenActive = screenActive == 0,
-                screenIndex = 0
-            )
-            DrawerItem(
-                onClick = {
-                    openDrawer(false)
-                    openScreen(it)
-                },
-                icon = painterResource(id = R.drawable.category),
-                iconDescription = "Category Icon",
-                title = "Categories",
-                screenActive = screenActive == 1,
-                screenIndex = 1
-            )
-            //TODO Pinning of Categories
-//            Container(backgroundColor: MaterialTheme.colorScheme.Tertiary) {
-//                Row(modifier = Modifier.padding(12.dp)) {
-//                    Spacer(modifier = Modifier.width(30.dp))
-//                    Box(modifier = Modifier
-//                        .width(3.dp)
-//                        .height(pinnedSize)
-//                        .clip(CircleShape)
-//                        .background(
-//                            Red
-//                        ))
-//                    LazyColumn(modifier = Modifier
-//                        .fillMaxWidth()
-//                        .height(pinnedSize)
-//                        .padding(start = 12.dp)) {
-//                        item {
-//                            Row(modifier = Modifier
-//                                .fillMaxWidth()
-//                                .padding(horizontal = 12.dp, vertical = 6.dp),
-//                                horizontalArrangement = Arrangement.Start,
-//                                verticalAlignment = Alignment.CenterVertically
-//                            ) {
-//                                Image(
-//                                    painter = painterResource(id = R.drawable.pin),
-//                                    contentDescription = "Pin Icon",
-//                                    modifier = Modifier
-//                                        .width(30.dp)
-//                                        .height(30.dp)
-//                                )
-//                                Spacer(modifier = Modifier.width(10.dp))
-//                                Text(text = "Pinned")
-//                            }
-//                        }
-//                        categories?.size?.let {
-//                            items(it) { index ->
-//                                val category = categories[index]
-//                                Button(onClick = { /*TODO*/ }) {
-//                                    Text(text = category.name)
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-            DrawerItem(
-                onClick = {
-                    openDrawer(false)
-                    openScreen(it)
-                },
-                icon = painterResource(id = R.drawable.heart),
-                iconDescription = "About Icon",
-                title = "Favourites",
-                screenActive = screenActive == 2,
-                screenIndex = 2
-            )
-            DrawerItem(
-                onClick = {
-                    openDrawer(false)
-                    openScreen(it)
-                },
-                icon = painterResource(id = R.drawable.about),
-                iconDescription = "About Icon",
-                title = "About",
-                screenActive = screenActive == 3,
-                screenIndex = 3
-            )
+            item {
+                Image(
+                    painter = painterResource(id = R.drawable.drawerbg),
+                    contentDescription = "DrawerBanner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(172.dp),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center
+                )
+            }
+            item {
+                DrawerItem(
+                    onClick = {
+                        openDrawer(false)
+                        openScreen(it)
+                    },
+                    icon = painterResource(id = R.drawable.home),
+                    iconDescription = "Home Icon",
+                    title = "Home",
+                    screenActive = screenActive == 0,
+                    screenIndex = 0
+                )
+            }
+            item {
+                DrawerItem(
+                    onClick = {
+                        openDrawer(false)
+
+                        openScreen(it)
+                    },
+                    icon = painterResource(id = R.drawable.heart),
+                    iconDescription = "About Icon",
+                    title = "Favourites",
+                    screenActive = screenActive == 2,
+                    screenIndex = 2
+                )
+            }
+            item {
+                DrawerItem(
+                    onClick = {
+                        openDrawer(false)
+                        openScreen(it)
+                    },
+                    icon = painterResource(id = R.drawable.about),
+                    iconDescription = "About Icon",
+                    title = "About",
+                    screenActive = screenActive == 3,
+                    screenIndex = 3
+                )
+            }
+            item {
+                DrawerItem(
+                    onClick = {
+                        openDrawer(false)
+                        openScreen(it)
+                    },
+                    icon = painterResource(id = R.drawable.category),
+                    iconDescription = "Category Icon",
+                    title = "Categories",
+                    screenActive = screenActive == 1 || screenActive == 4,
+                    screenIndex = 1
+                )
+            }
+            categories?.size?.let {
+                items(categories.size) { index ->
+                    val category = categories[index]
+                    if (index == 0) {
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)).background(MaterialTheme.colorScheme.tertiary).clickable {
+                            openDrawer(false)
+                            makeCategoryScreenActive(category._id)
+                        }) {
+                            Text(text = category.name, modifier = Modifier.padding(horizontal = 62.dp, vertical = 22.dp))
+                        }
+                    } else {
+                        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.tertiary).clickable {
+                            openDrawer(false)
+                            makeCategoryScreenActive(category._id)
+                        }) {
+                            Text(text = category.name, modifier = Modifier.padding(horizontal = 62.dp, vertical = 22.dp))
+                        }
+                    }
+                }
+            }
         }
     }
 }

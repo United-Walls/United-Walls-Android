@@ -1,18 +1,9 @@
 package com.paraskcd.unitedwalls.screens
 
-import android.content.ContentValues
-import android.content.Context
-import android.graphics.Bitmap
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +16,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
@@ -36,23 +26,16 @@ import com.paraskcd.unitedwalls.components.Screen
 import com.paraskcd.unitedwalls.components.WallpaperImage
 import com.paraskcd.unitedwalls.utils.Constants
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
-import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.SnapOffsets
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
-import java.io.IOException
-
-@OptIn(ExperimentalSnapperApi::class)
 @Composable
 fun Home(
     openDrawer: (Boolean) -> Unit,
     isDrawerActive: Boolean,
     screenActive: Int,
     wallsViewModel: WallsViewModel,
-    makeWallScreenActive: (Boolean) -> Unit
+    makeWallScreenActive: (Boolean) -> Unit,
 ) {
     val walls = wallsViewModel.walls.observeAsState().value
     val loadingWalls = wallsViewModel.loadingWalls.observeAsState().value
-    val lazyListState = rememberLazyListState()
 
     Screen(
         openDrawer = openDrawer,
@@ -68,26 +51,18 @@ fun Home(
                 )
             }
         }
-        LazyColumn(
-            state = lazyListState,
-            flingBehavior = rememberSnapperFlingBehavior(
-                lazyListState = lazyListState,
-                snapOffsetForItem = SnapOffsets.Center,
-            )
-        ) {
+        LazyColumn {
             walls?.size?.let {
                 items(it) { index ->
                     val wall = walls[index]
                     
                     wall.file_url?.let { fileURL ->
                         Column {
-                            if (index % 2 == 0 && index > 0) {
-                                AndroidView(modifier = Modifier.fillMaxWidth().height(80.dp).padding(bottom = 6.dp).clip(
-                                    RoundedCornerShape(12.dp)
-                                ), factory = { context ->
+                            if (index % 4 == 0 && index > 0) {
+                                AndroidView(modifier = Modifier.fillMaxWidth().height(270.dp).padding(bottom = 6.dp), factory = { context ->
                                     AdView(context).apply {
-                                        setAdSize(AdSize.FLUID)
-                                        adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.PUBLIC_AD
+                                        setAdSize(AdSize.MEDIUM_RECTANGLE)
+                                        adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.NATIVE_PUBLIC_AD
                                         loadAd(AdRequest.Builder().build())
                                     }
                                 })
@@ -110,8 +85,7 @@ fun Home(
                                 WallpaperImage(
                                     imageURL = fileURL,
                                     imageDescription = wall.file_name,
-                                    height = 420.dp,
-                                    extraKeys = "Home"
+                                    height = 420.dp
                                 )
                                 Box(
                                     modifier = Modifier
