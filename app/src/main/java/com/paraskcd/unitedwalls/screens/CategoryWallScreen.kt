@@ -160,8 +160,8 @@ fun CategoryWallScreen(
                                             context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
                                                 val imageFile = snapshot.data.toFile()
                                                 shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
-                                                shareIntent.setType("image/png");
-                                                shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context, BitmapFactory.decodeFile(imageFile.path), Bitmap.CompressFormat.PNG, "image/png", wall.file_name))
+                                                shareIntent.setType("image/jpeg");
+                                                shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context, BitmapFactory.decodeFile(imageFile.path), Bitmap.CompressFormat.JPEG, "image/jpeg", wall.file_name))
                                             }
                                             context.startActivity(shareIntent)
                                         },
@@ -184,7 +184,7 @@ fun CategoryWallScreen(
                                         onClick = {
                                             context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
                                                 val imageFile = snapshot.data.toFile()
-                                                saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = Bitmap.CompressFormat.PNG, mimeType = "image/png", displayName = wall.file_name)
+                                                saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = Bitmap.CompressFormat.JPEG, mimeType = "image/jpeg", displayName = wall.file_name)
                                                 Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
                                             }
                                         },

@@ -167,7 +167,8 @@ class MainActivity : ComponentActivity() {
                                 categoryActive = it
                                 screenActive = 4
                                 categoryViewModel.getCategoryById(it)
-                            }
+                            },
+                            wallsViewModel = wallsViewModel
                         )
                         WallScreen(
                             wallScreenActive = wallScreenActive,

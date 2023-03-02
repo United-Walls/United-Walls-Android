@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.screens
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.os.Environment
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -167,8 +169,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
                                                 val imageFile = snapshot.data.toFile()
                                                 shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
-                                                shareIntent.setType("image/png");
-                                                shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context, BitmapFactory.decodeFile(imageFile.path), Bitmap.CompressFormat.PNG, "image/png", wall.file_name))
+                                                shareIntent.setType("image/jpeg");
+                                                shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context, BitmapFactory.decodeFile(imageFile.path), Bitmap.CompressFormat.JPEG, "image/jpeg", wall.file_name))
                                             }
                                             context.startActivity(shareIntent)
                                         },
@@ -191,7 +193,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                         onClick = {
                                             context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
                                                 val imageFile = snapshot.data.toFile()
-                                                saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = Bitmap.CompressFormat.PNG, mimeType = "image/png", displayName = wall.file_name)
+                                                saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = Bitmap.CompressFormat.JPEG, mimeType = "image/jpeg", displayName = wall.file_name)
                                                 Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
                                             }
                                         },
@@ -236,25 +238,30 @@ fun saveBitmap(
     mimeType: String,
     displayName: String
 ): Uri {
+
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DCIM)
+        put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/UnitedWalls")
     }
 
     val resolver = context.contentResolver
     var uri: Uri? = null
 
     try {
-        uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            ?: throw IOException("Failed to create new MediaStore record.")
+        if (getExistingImageUriOrNullQ(context, displayName) == null) {
+            uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw IOException("Failed to create new MediaStore record.")
 
-        resolver.openOutputStream(uri)?.use {
-            if (!bitmap.compress(format, 100, it))
-                throw IOException("Failed to save bitmap.")
-        } ?: throw IOException("Failed to open output stream.")
+            resolver.openOutputStream(uri)?.use {
+                if (!bitmap.compress(format, 100, it))
+                    throw IOException("Failed to save bitmap.")
+            } ?: throw IOException("Failed to open output stream.")
 
-        return uri
+            return uri
+        } else {
+            return getExistingImageUriOrNullQ(context, displayName)!!
+        }
     } catch (e: IOException) {
         uri?.let { orphanUri ->
             resolver.delete(orphanUri, null, null)
@@ -262,4 +269,41 @@ fun saveBitmap(
 
         throw e
     }
+}
+
+private fun getExistingImageUriOrNullQ(context: Context, displayName: String): Uri? {
+    val projection = arrayOf(
+        MediaStore.MediaColumns._ID,
+        MediaStore.MediaColumns.DISPLAY_NAME,   // unused (for verification use only)
+        MediaStore.MediaColumns.RELATIVE_PATH,  // unused (for verification use only)
+        MediaStore.MediaColumns.DATE_MODIFIED   //used to set signature for Glide
+    )
+    Log.d("Display Name", displayName)
+    val selection = "${MediaStore.MediaColumns.RELATIVE_PATH}='${Environment.DIRECTORY_PICTURES}/UnitedWalls/' AND " + "${MediaStore.MediaColumns.DISPLAY_NAME}='$displayName.jpg' "
+
+    val contentResolver = context.contentResolver
+
+    contentResolver.query( MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        projection, selection, null, null ).use { c ->
+        if (c != null && c.count >= 1) {
+
+            Log.d("File", "Has Cursor Result")
+            c.moveToFirst().let {
+
+                val id = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID) )
+                val displayName = c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME) )
+                val relativePath = c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH) )
+                val lastModifiedDate = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED) )
+
+                val imageUri = ContentUris.withAppendedId(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,  id)
+
+                Log.d("image uri update", "$displayName $relativePath $imageUri $lastModifiedDate")
+
+                return imageUri
+            }
+        }
+    }
+    Log.d("File", "Does not exist")
+    return null
 }

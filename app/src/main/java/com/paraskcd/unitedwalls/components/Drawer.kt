@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 
 @Composable
 fun Drawer(
@@ -35,7 +36,8 @@ fun Drawer(
     categoryViewModel: CategoryViewModel,
     screenActive: Int,
     openScreen: (Int) -> Unit,
-    makeCategoryScreenActive: (id: String) -> Unit
+    makeCategoryScreenActive: (id: String) -> Unit,
+    wallsViewModel: WallsViewModel
 ) {
     var pinnedSize: Dp by remember { mutableStateOf(0.dp) }
     val categories = categoryViewModel.categories.observeAsState().value
@@ -102,19 +104,21 @@ fun Drawer(
                     screenIndex = 0
                 )
             }
-            item {
-                DrawerItem(
-                    onClick = {
-                        openDrawer(false)
+            if (wallsViewModel.favouritePopulatedWallsStore.isNotEmpty()) {
+                item {
+                    DrawerItem(
+                        onClick = {
+                            openDrawer(false)
 
-                        openScreen(it)
-                    },
-                    icon = painterResource(id = R.drawable.heart),
-                    iconDescription = "About Icon",
-                    title = "Favourites",
-                    screenActive = screenActive == 2,
-                    screenIndex = 2
-                )
+                            openScreen(it)
+                        },
+                        icon = painterResource(id = R.drawable.heart),
+                        iconDescription = "Favourite Icon",
+                        title = "Favourites",
+                        screenActive = screenActive == 2,
+                        screenIndex = 2
+                    )
+                }
             }
             item {
                 DrawerItem(
