@@ -9,5 +9,6 @@ data class WallsItem(
     val file_name: String,
     val file_url: String?,
     val mime_type: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val addedBy: String?
 )

@@ -20,18 +20,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
@@ -59,6 +64,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
+    var infoState: Boolean by remember { mutableStateOf(true) }
 
     LaunchedEffect(key1 = wallScreenActive) {
         Timer().schedule(0) {
@@ -113,23 +119,96 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxHeight(),
+                                    .fillMaxSize(),
                                 contentAlignment = Alignment.BottomEnd
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    Text(text = wall.file_name)
                                     WallpaperScreenImage(
                                         imageURL = fileURL,
                                         imageDescription = wall.file_name,
                                         width = screenWidth
                                     )
                                 }
+                                AnimatedVisibility(
+                                    visible = infoState,
+                                    enter = fadeIn(),
+                                    exit = fadeOut()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(screenWidth)
+                                            .padding(bottom = 18.dp)
+                                            .alpha(0.50f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .padding(start = 18.dp)
+                                                .clip(
+                                                    RoundedCornerShape(
+                                                        topStart = 12.dp,
+                                                        topEnd = 12.dp,
+                                                        bottomStart = if (wall.addedBy == null) 12.dp else 0.dp,
+                                                        bottomEnd = if (wall.addedBy == null) 12.dp else 0.dp
+                                                    )
+                                                )
+                                                .background(MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
+                                            Spacer(modifier = Modifier
+                                                .width(6.dp)
+                                                .padding(12.dp))
+                                            Text(text = wall.file_name, modifier = Modifier
+                                                .padding(12.dp)
+                                                .width(120.dp))
+                                        }
+                                        wall.addedBy?.let { addedBy ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .padding(start = 18.dp)
+                                                    .clip(
+                                                        RoundedCornerShape(
+                                                            bottomStart = 12.dp,
+                                                            bottomEnd = 12.dp
+                                                        )
+                                                    )
+                                                    .background(MaterialTheme.colorScheme.primary)
+                                            ) {
+                                                Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
+                                                Spacer(modifier = Modifier
+                                                    .width(6.dp)
+                                                    .padding(12.dp))
+                                                Text(text = addedBy, modifier = Modifier
+                                                    .padding(12.dp)
+                                                    .width(92.dp))
+                                            }
+                                        }
+                                    }
+                                }
                                 Column(
                                     modifier = Modifier.padding(end = 24.dp, bottom = 24.dp)
                                 ) {
+                                    IconButton(
+                                        onClick = {
+                                            infoState = !infoState
+                                        },
+                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier
+                                            .width(40.dp)
+                                            .height(40.dp)
+                                            .padding(bottom = 6.dp)
+                                            .alpha(0.75f)
+                                    ) {
+                                        Icon(
+                                            if (infoState) Icons.Filled.Info else Icons.Outlined.Info,
+                                            contentDescription = "Info",
+                                            modifier = Modifier
+                                                .padding(6.dp)
+                                                .size(40.dp)
+                                        )
+                                    }
                                     IconButton(
                                         onClick = {
                                             if (!liked) {
@@ -238,7 +317,6 @@ fun saveBitmap(
     mimeType: String,
     displayName: String
 ): Uri {
-
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
         put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
@@ -278,7 +356,6 @@ private fun getExistingImageUriOrNullQ(context: Context, displayName: String): U
         MediaStore.MediaColumns.RELATIVE_PATH,  // unused (for verification use only)
         MediaStore.MediaColumns.DATE_MODIFIED   //used to set signature for Glide
     )
-    Log.d("Display Name", displayName)
     val selection = "${MediaStore.MediaColumns.RELATIVE_PATH}='${Environment.DIRECTORY_PICTURES}/UnitedWalls/' AND " + "${MediaStore.MediaColumns.DISPLAY_NAME}='$displayName.jpg' "
 
     val contentResolver = context.contentResolver
@@ -286,24 +363,13 @@ private fun getExistingImageUriOrNullQ(context: Context, displayName: String): U
     contentResolver.query( MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
         projection, selection, null, null ).use { c ->
         if (c != null && c.count >= 1) {
-
-            Log.d("File", "Has Cursor Result")
             c.moveToFirst().let {
-
                 val id = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID) )
-                val displayName = c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME) )
-                val relativePath = c.getString(c.getColumnIndexOrThrow(MediaStore.MediaColumns.RELATIVE_PATH) )
-                val lastModifiedDate = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED) )
-
                 val imageUri = ContentUris.withAppendedId(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,  id)
-
-                Log.d("image uri update", "$displayName $relativePath $imageUri $lastModifiedDate")
-
                 return imageUri
             }
         }
     }
-    Log.d("File", "Does not exist")
     return null
 }

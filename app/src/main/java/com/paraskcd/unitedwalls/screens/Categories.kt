@@ -83,7 +83,7 @@ fun Categories(
                         }
                         Box(
                             modifier = Modifier
-                            .alpha(0.75F)
+                            .alpha(0.50F)
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.primary)
                         )

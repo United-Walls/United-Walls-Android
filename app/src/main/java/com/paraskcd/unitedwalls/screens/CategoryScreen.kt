@@ -100,10 +100,6 @@ fun CategoryScreen(
                                         )
                                         .alpha(0.7f)
                                 )
-                                Text(
-                                    text = wall.file_name,
-                                    modifier = Modifier.padding(24.dp)
-                                )
                             }
                         }
                     }

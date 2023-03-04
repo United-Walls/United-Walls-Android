@@ -129,6 +129,9 @@ class MainActivity : ComponentActivity() {
                                         colors = listOf(
                                             Color.Transparent,
                                             Color.Transparent,
+                                            Color.Transparent,
+                                            Color.Transparent,
+                                            Color.Transparent,
                                             MaterialTheme.colorScheme.primary
                                         )
                                     )
