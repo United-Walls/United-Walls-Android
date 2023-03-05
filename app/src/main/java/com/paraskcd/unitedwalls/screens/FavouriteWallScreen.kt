@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,6 +33,7 @@ import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
+import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import dev.chrisbanes.snapper.SnapOffsets
@@ -45,7 +47,8 @@ import kotlin.concurrent.schedule
 fun FavouriteWallScreen(
     favouriteWallScreenActive: Boolean,
     makeFavouriteWallScreenActive: (Boolean) -> Unit,
-    wallsViewModel: WallsViewModel
+    wallsViewModel: WallsViewModel,
+    categoryViewModel: CategoryViewModel
 ) {
     val lazyListState = rememberLazyListState()
     val walls = wallsViewModel.favouritePopulatedWallsStore
@@ -55,7 +58,8 @@ fun FavouriteWallScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
-    var infoState: Boolean by remember { mutableStateOf(true) }
+    var infoState: Boolean by remember { mutableStateOf(false) }
+    val categories = categoryViewModel.categories.observeAsState().value
 
     LaunchedEffect(key1 = favouriteWallScreenActive) {
         Timer().schedule(0) {
@@ -90,6 +94,18 @@ fun FavouriteWallScreen(
             ) {
                 itemsIndexed(walls) { index, wall ->
                     wall.file_url?.let { fileURL ->
+                        val wallName = wall.file_name.replace('_', ' ')
+                        var category: String? = null
+
+                        if (categories != null) {
+                            for (cat in categories) {
+                                if (cat._id == wall.category) {
+                                    category = cat.name
+                                    break
+                                }
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight(),
@@ -99,6 +115,9 @@ fun FavouriteWallScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
+                                category?.let {
+                                    Text(text = category)
+                                }
                                 WallpaperScreenImage(
                                     imageURL = fileURL,
                                     imageDescription = wall.file_name,
@@ -114,7 +133,7 @@ fun FavouriteWallScreen(
                                     modifier = Modifier
                                         .width(screenWidth)
                                         .padding(bottom = 18.dp)
-                                        .alpha(0.50f)
+                                        .alpha(0.85f)
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -128,14 +147,11 @@ fun FavouriteWallScreen(
                                                 )
                                             )
                                             .background(MaterialTheme.colorScheme.primary)
+                                            .width(230.dp)
                                     ) {
-                                        Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
-                                        Spacer(modifier = Modifier
-                                            .width(6.dp)
-                                            .padding(12.dp))
-                                        Text(text = wall.file_name, modifier = Modifier
-                                            .padding(12.dp)
-                                            .width(120.dp))
+                                        Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 6.dp))
+                                        Text(text = " $wallName", modifier = Modifier
+                                            .padding(top = 12.dp, bottom = 6.dp))
                                     }
                                     wall.addedBy?.let { addedBy ->
                                         Row(
@@ -148,14 +164,11 @@ fun FavouriteWallScreen(
                                                     )
                                                 )
                                                 .background(MaterialTheme.colorScheme.primary)
+                                                .width(230.dp)
                                         ) {
-                                            Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
-                                            Spacer(modifier = Modifier
-                                                .width(6.dp)
-                                                .padding(12.dp))
-                                            Text(text = addedBy, modifier = Modifier
-                                                .padding(12.dp)
-                                                .width(92.dp))
+                                            Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
+                                            Text(text = " $addedBy", modifier = Modifier
+                                                .padding(top = 6.dp, bottom = 12.dp))
                                         }
                                     }
                                 }
@@ -172,7 +185,7 @@ fun FavouriteWallScreen(
                                         .width(40.dp)
                                         .height(40.dp)
                                         .padding(bottom = 6.dp)
-                                        .alpha(0.75f)
+                                        .alpha(0.50f)
                                 ) {
                                     Icon(
                                         if (infoState) Icons.Filled.Info else Icons.Outlined.Info,

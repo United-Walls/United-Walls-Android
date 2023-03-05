@@ -122,7 +122,7 @@ fun WallpaperScreenImage(imageURL: String, imageDescription: String, width: Dp) 
                 .shadow(elevation = 12.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.tertiary),
-            contentScale = ContentScale.FillWidth
+            contentScale = ContentScale.Crop
         )
         if(painter.state is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(

@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.di
 
+import android.app.WallpaperManager
 import android.content.Context
 import androidx.room.Room
 import com.paraskcd.unitedwalls.data.UnitedWallsDatabase
@@ -49,4 +50,8 @@ object AppModule {
     @Singleton
     @Provides
     fun provideRepoDB(@ApplicationContext context: Context): UnitedWallsDatabase = Room.databaseBuilder(context, UnitedWallsDatabase::class.java, "united_walls_db").fallbackToDestructiveMigration().build()
+
+    @Singleton
+    @Provides
+    fun provideWallpaperManager(@ApplicationContext context: Context): WallpaperManager = WallpaperManager.getInstance(context)
 }

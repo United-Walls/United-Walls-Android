@@ -59,6 +59,7 @@ fun FavouriteWalls(
         LazyColumn {
             itemsIndexed(walls) { index, wall ->
                 wall.file_url?.let { fileURL ->
+
                     Column {
                         if (index % 4 == 0 && index > 0) {
                             AndroidView(modifier = Modifier

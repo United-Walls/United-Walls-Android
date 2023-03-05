@@ -176,7 +176,8 @@ class MainActivity : ComponentActivity() {
                         WallScreen(
                             wallScreenActive = wallScreenActive,
                             makeWallScreenActive = { wallScreenActive = it },
-                            wallsViewModel = wallsViewModel
+                            wallsViewModel = wallsViewModel,
+                            categoryViewModel = categoryViewModel
                         )
                         CategoryWallScreen(
                             categoryWallScreenActive = categoryWallScreenActive,
@@ -188,7 +189,8 @@ class MainActivity : ComponentActivity() {
                         FavouriteWallScreen(
                             favouriteWallScreenActive = favouriteWallScreenActive,
                             makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
-                            wallsViewModel = wallsViewModel
+                            wallsViewModel = wallsViewModel,
+                            categoryViewModel = categoryViewModel
                         )
                     }
                 }

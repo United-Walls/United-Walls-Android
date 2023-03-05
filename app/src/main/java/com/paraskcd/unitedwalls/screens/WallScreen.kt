@@ -43,6 +43,7 @@ import coil.imageLoader
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.model.FavouriteWallsTable
+import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import dev.chrisbanes.snapper.SnapOffsets
@@ -55,7 +56,7 @@ import kotlin.concurrent.schedule
 
 @OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class)
 @Composable
-fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel) {
+fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
     val lazyListState = rememberLazyListState()
     val walls = wallsViewModel.walls.observeAsState().value
     val wallIndex = wallsViewModel.selectedWallIndex.value
@@ -64,7 +65,8 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
-    var infoState: Boolean by remember { mutableStateOf(true) }
+    var infoState: Boolean by remember { mutableStateOf(false) }
+    val categories = categoryViewModel.categories.observeAsState().value
 
     LaunchedEffect(key1 = wallScreenActive) {
         Timer().schedule(0) {
@@ -100,6 +102,17 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                 walls?.size?.let {
                     items(it) { index ->
                         val wall = walls[index]
+                        val wallName = wall.file_name.replace('_', ' ')
+                        var category: String? = null
+
+                        if (categories != null) {
+                            for (cat in categories) {
+                                if (cat._id == wall.category) {
+                                    category = cat.name
+                                    break
+                                }
+                            }
+                        }
 
                         wall.file_url?.let { fileURL ->
                             var liked: Boolean by remember {
@@ -126,6 +139,9 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
+                                    category?.let {
+                                        Text(text = category)
+                                    }
                                     WallpaperScreenImage(
                                         imageURL = fileURL,
                                         imageDescription = wall.file_name,
@@ -141,7 +157,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                         modifier = Modifier
                                             .width(screenWidth)
                                             .padding(bottom = 18.dp)
-                                            .alpha(0.50f)
+                                            .alpha(0.85f)
                                     ) {
                                         Row(
                                             modifier = Modifier
@@ -155,14 +171,11 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                     )
                                                 )
                                                 .background(MaterialTheme.colorScheme.primary)
+                                                .width(230.dp)
                                         ) {
-                                            Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
-                                            Spacer(modifier = Modifier
-                                                .width(6.dp)
-                                                .padding(12.dp))
-                                            Text(text = wall.file_name, modifier = Modifier
-                                                .padding(12.dp)
-                                                .width(120.dp))
+                                            Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 6.dp))
+                                            Text(text = " $wallName", modifier = Modifier
+                                                .padding(top = 12.dp, bottom = 6.dp))
                                         }
                                         wall.addedBy?.let { addedBy ->
                                             Row(
@@ -175,14 +188,11 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                         )
                                                     )
                                                     .background(MaterialTheme.colorScheme.primary)
+                                                    .width(230.dp)
                                             ) {
-                                                Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp))
-                                                Spacer(modifier = Modifier
-                                                    .width(6.dp)
-                                                    .padding(12.dp))
-                                                Text(text = addedBy, modifier = Modifier
-                                                    .padding(12.dp)
-                                                    .width(92.dp))
+                                                Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
+                                                Text(text = " $addedBy", modifier = Modifier
+                                                    .padding(top = 6.dp, bottom = 12.dp))
                                             }
                                         }
                                     }
@@ -199,7 +209,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             .width(40.dp)
                                             .height(40.dp)
                                             .padding(bottom = 6.dp)
-                                            .alpha(0.75f)
+                                            .alpha(0.50f)
                                     ) {
                                         Icon(
                                             if (infoState) Icons.Filled.Info else Icons.Outlined.Info,

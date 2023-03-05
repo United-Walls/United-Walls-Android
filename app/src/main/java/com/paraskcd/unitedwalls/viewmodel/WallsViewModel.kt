@@ -1,9 +1,16 @@
 package com.paraskcd.unitedwalls.viewmodel
 
+import android.app.PendingIntent.getActivity
+import android.app.WallpaperManager
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -19,10 +26,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
-class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepository): ViewModel() {
+class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepository, private val wallpaperManager: WallpaperManager): ViewModel() {
     private val wallsData: MutableState<DataOrException<Walls, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
 
     private val _walls = MutableLiveData<Walls>()
@@ -114,5 +122,25 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
         viewModelScope.launch {
             wallsRepository.unfavouriteAWallpaper(wall)
         }
+    }
+
+    fun setAsWallpaper(context: Context, bitmap: Bitmap) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                startActivity(context, wallpaperManager.getCropAndSetWallpaperIntent(getImageUri(context, bitmap)), null)
+            } catch(e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun getImageUri(context: Context, bitmap: Bitmap?): Uri {
+        val contentResolver = context.contentResolver
+        val bytes = ByteArrayOutputStream()
+        bitmap?.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
+        val path = MediaStore.Images.Media.insertImage(
+            contentResolver, bitmap, System.currentTimeMillis().toString(), null
+        )
+        return Uri.parse(path)
     }
 }
