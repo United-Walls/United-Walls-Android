@@ -41,7 +41,7 @@ fun About(openDrawer: (Boolean) -> Unit, isDrawerActive: Boolean, screenActive: 
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = "About", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text(text = "United Walls is an App created with love by the United Setups community in Telegram. All Wallpapers are provided by the community to share them with you. Enjoy your devices with our handcrafted beautiful and artistic Designs.")
+                        Text(text = "Enjoy your devices with our handcrafted, beautiful and artistic designs.\n\nUnited Walls is an app created by the United Setups community in Telegram to provide users with unique wallpapers that are sure to make a statement on any device.\n\nOur community of dedicated users and designers work tirelessly to ensure each wallpaper reflects the love we put into crafting it - so you can be confident knowing only high-quality art will grace your device's display!")
                     }
                 }
             }

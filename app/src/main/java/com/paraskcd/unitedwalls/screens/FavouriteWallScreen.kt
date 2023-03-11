@@ -187,8 +187,8 @@ fun FavouriteWallScreen(
                                         .padding(bottom = 6.dp)
                                         .alpha(0.50f)
                                 ) {
-                                    Icon(
-                                        if (infoState) Icons.Filled.Info else Icons.Outlined.Info,
+                                    Image(
+                                        painter = painterResource(id = if (!infoState) R.drawable.about else R.drawable.aboutfilled),
                                         contentDescription = "Info",
                                         modifier = Modifier
                                             .padding(6.dp)
@@ -227,7 +227,7 @@ fun FavouriteWallScreen(
                                             val imageFile = snapshot.data.toFile()
                                             shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
                                             shareIntent.setType("image/jpeg");
-                                            shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context, BitmapFactory.decodeFile(imageFile.path), Bitmap.CompressFormat.JPEG, "image/jpeg", wall.file_name))
+                                            shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name))
                                         }
                                         context.startActivity(shareIntent)
                                     },
@@ -250,7 +250,7 @@ fun FavouriteWallScreen(
                                     onClick = {
                                         context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
                                             val imageFile = snapshot.data.toFile()
-                                            saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = Bitmap.CompressFormat.JPEG, mimeType = "image/jpeg", displayName = wall.file_name)
+                                            saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name)
                                             Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
                                         }
                                     },
@@ -279,7 +279,13 @@ fun FavouriteWallScreen(
                 IconButton(onClick = {
                     makeFavouriteWallScreenActive(false)
                 }) {
-                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Menu Icon")
+                    Image(
+                        painter = painterResource(id = R.drawable.arrow),
+                        contentDescription = "Arrow",
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
+                    )
                 }
             }
         }

@@ -85,21 +85,7 @@ fun Home(
                                 WallpaperImage(
                                     imageURL = fileURL,
                                     imageDescription = wall.file_name,
-                                    height = 420.dp
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(120.dp)
-                                        .background(
-                                            brush = Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.primary
-                                                )
-                                            )
-                                        )
-                                        .alpha(0.7f)
+                                    height = 380.dp
                                 )
                             }
                         }

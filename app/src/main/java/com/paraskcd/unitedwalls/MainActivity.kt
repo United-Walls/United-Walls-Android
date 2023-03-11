@@ -121,22 +121,6 @@ class MainActivity : ComponentActivity() {
                             openDrawer = { isDrawerActive = it },
                             openScreen = { screenActive = it }
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Transparent,
-                                            Color.Transparent,
-                                            Color.Transparent,
-                                            Color.Transparent,
-                                            MaterialTheme.colorScheme.primary
-                                        )
-                                    )
-                                )
-                        )
                         AnimatedVisibility(
                             visible = isDrawerActive,
                             enter = fadeIn(),
