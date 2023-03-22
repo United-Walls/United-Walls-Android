@@ -15,8 +15,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -40,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
+import com.mxalbert.zoomable.OverZoomConfig
+import com.mxalbert.zoomable.rememberZoomableState
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.model.FavouriteWallsTable
@@ -54,7 +58,7 @@ import java.io.IOException
 import java.util.*
 import kotlin.concurrent.schedule
 
-@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class)
+@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
     val lazyListState = rememberLazyListState()
@@ -94,10 +98,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
             LazyRow(
                 modifier = Modifier.padding(vertical = 32.dp),
                 state = lazyListState,
-                flingBehavior = rememberSnapperFlingBehavior(
-                    lazyListState = lazyListState,
-                    snapOffsetForItem = SnapOffsets.Center,
-                )
+                flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState)
             ) {
                 walls?.size?.let {
                     items(it) { index ->

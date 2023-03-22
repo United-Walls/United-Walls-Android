@@ -58,9 +58,9 @@ fun CategoryScreen(
                     wall.file_url?.let { fileURL ->
                         Column {
                             if (index % 4 == 0 && index > 0) {
-                                AndroidView(modifier = Modifier.fillMaxWidth().height(270.dp).padding(bottom = 6.dp), factory = { context ->
+                                AndroidView(modifier = Modifier.fillMaxWidth().height(80.dp).padding(bottom = 6.dp), factory = { context ->
                                     AdView(context).apply {
-                                        setAdSize(AdSize.MEDIUM_RECTANGLE)
+                                        setAdSize(AdSize.BANNER)
                                         adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.NATIVE_PUBLIC_AD
                                         loadAd(AdRequest.Builder().build())
                                     }

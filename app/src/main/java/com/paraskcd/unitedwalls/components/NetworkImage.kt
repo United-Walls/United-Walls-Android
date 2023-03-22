@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.ImageLoader
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -24,6 +25,9 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.mxalbert.zoomable.OverZoomConfig
+import com.mxalbert.zoomable.Zoomable
+import com.mxalbert.zoomable.rememberZoomableState
 
 @Composable
 fun NetworkImage(imageURL: String, imageDescription: String, size: Dp, shape: Shape) {
@@ -99,6 +103,9 @@ fun WallpaperImage(imageURL: String, imageDescription: String, height: Dp) {
 @Composable
 fun WallpaperScreenImage(imageURL: String, imageDescription: String, width: Dp) {
     val context = LocalContext.current
+    val state = rememberZoomableState(
+        overZoomConfig = OverZoomConfig(minSnapScale = 1f, maxSnapScale = 1f)
+    )
 
     val painter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(context = context).data(imageURL).diskCacheKey(imageURL).memoryCacheKey(imageURL).build(),
@@ -112,18 +119,28 @@ fun WallpaperScreenImage(imageURL: String, imageDescription: String, width: Dp) 
     )
 
     Box(contentAlignment = Alignment.Center) {
-        Image(
-            painter = painter,
-            contentDescription = imageDescription,
+        Zoomable(
+            state = state,
             modifier = Modifier
                 .fillMaxHeight()
                 .width(width)
-                .padding(12.dp)
-                .shadow(elevation = 12.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.tertiary),
-            contentScale = ContentScale.Crop
-        )
+                .padding(8.dp)
+                .zIndex(if (state.isZooming) 1f else 0f)
+        ) {
+            Image(
+                painter = painter,
+                contentDescription = imageDescription,
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(width)
+                    .padding(12.dp)
+                    .shadow(elevation = 12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.tertiary),
+                contentScale = ContentScale.Crop
+            )
+        }
+
         if(painter.state is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),

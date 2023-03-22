@@ -104,6 +104,8 @@ dependencies {
 
     // To use Kotlin annotation processing tool (kapt)
     kapt "androidx.room:room-compiler:2.5.0"
+
+    implementation "com.mxalbert.zoomable:zoomable:1.5.1"
 }
 
 kapt {

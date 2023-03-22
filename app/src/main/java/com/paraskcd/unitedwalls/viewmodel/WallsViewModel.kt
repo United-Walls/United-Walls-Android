@@ -31,10 +31,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepository, private val wallpaperManager: WallpaperManager): ViewModel() {
-    private val wallsData: MutableState<DataOrException<Walls, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+    private val wallsDataCount: MutableState<DataOrException<Walls, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+    private val wallsData: MutableState<DataOrException<
+            List<WallsItem>, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+    private val currentPage: MutableState<Int> = mutableStateOf(0)
 
-    private val _walls = MutableLiveData<Walls>()
+    private val _walls = MutableLiveData<List<WallsItem>>()
     private val _loadingWalls = MutableLiveData(true)
+    private val _totalWalls = MutableLiveData(0)
 
     private val _favouriteWalls = MutableStateFlow<List<FavouriteWallsTable>>(emptyList())
     val favouriteWalls = _favouriteWalls.asStateFlow()
@@ -44,10 +48,12 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
     var selectedWallIndex: MutableState<Int> = mutableStateOf(0)
     var selectedFavouriteWallIndex: MutableState<Int> = mutableStateOf(0)
 
-    val walls: LiveData<Walls>
+    val walls: LiveData<List<WallsItem>>
         get() = _walls
     val loadingWalls: LiveData<Boolean>
         get() = _loadingWalls
+    val totalWalls: LiveData<Int>
+        get() = _totalWalls
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -56,21 +62,57 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
         viewModelScope.launch(Dispatchers.IO) {
             getFavouriteWalls()
         }
+        viewModelScope.launch(Dispatchers.IO) {
+            getWallsCount()
+        }
+    }
+
+    private fun getWallsCount() {
+        viewModelScope.launch {
+            wallsDataCount.value.loading = true
+            wallsDataCount.value = wallsRepository.getWalls()
+            if(wallsDataCount.value.data.toString().isNotEmpty()) {
+                wallsDataCount.value.loading = false
+                _totalWalls.value = wallsDataCount.value.data?.size
+                wallsData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
+            }
+        }
     }
 
     private fun getWallsData() {
         viewModelScope.launch {
             wallsData.value.loading = true
-            wallsData.value = wallsRepository.getWalls()
-
+            wallsData.value = wallsRepository.getWallsPerPage(currentPage.value)
             if(wallsData.value.data.toString().isNotEmpty()) {
                 wallsData.value.loading = false
-                _loadingWalls.value = false
                 _walls.value = wallsData.value.data
-                Log.d("Walls", walls.value.toString())
+                Log.d("Wallss Size", walls.value!!.size.toString())
                 wallsData.value.e?.localizedMessage?.let {
                     Log.d("WallsError", it)
                 }
+                _loadingWalls.value = false
+                currentPage.value += 1
+            }
+        }
+    }
+
+    fun getMoreData() {
+        viewModelScope.launch {
+            Log.d("Wallss", currentPage.value.toString())
+            wallsData.value.loading = true
+            wallsData.value = wallsRepository.getWallsPerPage(currentPage.value)
+            if(wallsData.value.data.toString().isNotEmpty()) {
+                wallsData.value.loading = false
+                var wallsNewData: List<WallsItem> = walls.value!!.plus(wallsData.value.data!!)
+                _walls.postValue(wallsNewData)
+                Log.d("Wallss Size", walls.value!!.size.toString())
+                wallsData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
+                _loadingWalls.value = false
+                currentPage.value += 1
             }
         }
     }

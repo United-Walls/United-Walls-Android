@@ -4,11 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +37,9 @@ fun Home(
     makeWallScreenActive: (Boolean) -> Unit,
 ) {
     val walls = wallsViewModel.walls.observeAsState().value
+    val totalWalls = wallsViewModel.totalWalls.observeAsState().value
     val loadingWalls = wallsViewModel.loadingWalls.observeAsState().value
+    val scrollState = rememberLazyListState()
 
     Screen(
         openDrawer = openDrawer,
@@ -51,7 +55,7 @@ fun Home(
                 )
             }
         }
-        LazyColumn {
+        LazyColumn(state = scrollState) {
             walls?.size?.let {
                 items(it) { index ->
                     val wall = walls[index]
@@ -59,9 +63,12 @@ fun Home(
                     wall.file_url?.let { fileURL ->
                         Column {
                             if (index % 4 == 0 && index > 0) {
-                                AndroidView(modifier = Modifier.fillMaxWidth().height(270.dp).padding(bottom = 6.dp), factory = { context ->
+                                AndroidView(modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(80.dp)
+                                    .padding(bottom = 6.dp), factory = { context ->
                                     AdView(context).apply {
-                                        setAdSize(AdSize.MEDIUM_RECTANGLE)
+                                        setAdSize(AdSize.BANNER)
                                         adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.NATIVE_PUBLIC_AD
                                         loadAd(AdRequest.Builder().build())
                                     }
@@ -91,8 +98,12 @@ fun Home(
                         }
                     }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(120.dp))
+                item { 
+                    LaunchedEffect(true) {
+                        if (totalWalls != walls.size) {
+                            wallsViewModel.getMoreData()
+                        }
+                    }
                 }
             }
         }
