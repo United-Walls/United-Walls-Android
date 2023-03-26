@@ -74,7 +74,7 @@ fun Categories(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        category.walls[0].file_url?.let { fileURL ->
+                        category.walls[0].thumbnail_url?.let { fileURL ->
                             WallpaperImage(
                                 imageURL = fileURL,
                                 imageDescription = category.walls[0].file_name,

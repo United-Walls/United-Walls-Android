@@ -6,8 +6,10 @@ data class WallsItem(
     val category: String,
     val createdAt: String,
     val file_id: String,
+    val thumbnail_id: String,
     val file_name: String,
     val file_url: String?,
+    val thumbnail_url: String?,
     val mime_type: String,
     val updatedAt: String,
     val addedBy: String?

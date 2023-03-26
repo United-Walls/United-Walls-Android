@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,27 +57,26 @@ fun FavouriteWalls(
                 )
             }
         }
-        LazyColumn {
-            itemsIndexed(walls) { index, wall ->
-                wall.file_url?.let { fileURL ->
+        LazyVerticalGrid(
+            modifier = Modifier
+                .fillMaxSize(),
+            columns = GridCells.Fixed(2)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(70.dp))
+            }
+            item {
+                Spacer(modifier = Modifier.height(70.dp))
+            }
+            walls?.size?.let {
+                items(it) { index ->
+                    val wall = walls[index]
 
-                    Column {
-                        if (index % 4 == 0 && index > 0) {
-                            AndroidView(modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                                .padding(bottom = 6.dp), factory = { context ->
-                                AdView(context).apply {
-                                    setAdSize(AdSize.BANNER)
-                                    adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.NATIVE_PUBLIC_AD
-                                    loadAd(AdRequest.Builder().build())
-                                }
-                            })
-                        }
+                    wall.thumbnail_url?.let { fileURL ->
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 6.dp)
+                                .padding(vertical = 3.dp, horizontal = 3.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable {
                                     if (!isDrawerActive) {
@@ -91,16 +91,12 @@ fun FavouriteWalls(
                             WallpaperImage(
                                 imageURL = fileURL,
                                 imageDescription = wall.file_name,
-                                height = 380.dp
+                                height = 220.dp
                             )
                         }
                     }
                 }
             }
-            item {
-                Spacer(modifier = Modifier.height(120.dp))
-            }
-
         }
     }
 }

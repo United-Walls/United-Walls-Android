@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -50,48 +52,43 @@ fun CategoryScreen(
                 )
             }
         }
-        LazyColumn {
+        LazyVerticalGrid(
+            modifier = Modifier
+                .fillMaxSize(),
+            columns = GridCells.Fixed(2)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(70.dp))
+            }
+            item {
+                Spacer(modifier = Modifier.height(70.dp))
+            }
             category?.let {
                 items(it.walls.size) { index ->
                     val wall = it.walls[index]
 
-                    wall.file_url?.let { fileURL ->
-                        Column {
-                            if (index % 4 == 0 && index > 0) {
-                                AndroidView(modifier = Modifier.fillMaxWidth().height(80.dp).padding(bottom = 6.dp), factory = { context ->
-                                    AdView(context).apply {
-                                        setAdSize(AdSize.BANNER)
-                                        adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.NATIVE_PUBLIC_AD
-                                        loadAd(AdRequest.Builder().build())
+                    wall.thumbnail_url?.let { fileURL ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp, horizontal = 3.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    if (!isDrawerActive) {
+                                        makeCategoryWallScreenActive(true, index)
+                                    } else {
+                                        openDrawer(false)
                                     }
-                                })
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        if (!isDrawerActive) {
-                                            //Todo
-                                            makeCategoryWallScreenActive(true, index)
-                                        } else {
-                                            openDrawer(false)
-                                        }
-                                    },
-                                contentAlignment = Alignment.BottomStart
-                            ) {
-                                WallpaperImage(
-                                    imageURL = fileURL,
-                                    imageDescription = wall.file_name,
-                                    height = 380.dp
-                                )
-                            }
+                                },
+                            contentAlignment = Alignment.BottomStart
+                        ) {
+                            WallpaperImage(
+                                imageURL = fileURL,
+                                imageDescription = wall.file_name,
+                                height = 220.dp
+                            )
                         }
                     }
-                }
-                item {
-                    Spacer(modifier = Modifier.height(120.dp))
                 }
             }
         }
