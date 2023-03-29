@@ -24,6 +24,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
@@ -81,10 +82,15 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
         }
     }
 
-    private fun getWallsData() {
+    fun resetPage() {
+        currentPage.value = 0
+    }
+
+    fun getWallsData() {
         viewModelScope.launch {
+            _walls.value = emptyList()
             wallsData.value.loading = true
-            wallsData.value = wallsRepository.getWallsPerPage(currentPage.value)
+            wallsData.value = wallsRepository.getWallsPerPage(0)
             if(wallsData.value.data.toString().isNotEmpty()) {
                 wallsData.value.loading = false
                 _walls.value = wallsData.value.data
@@ -93,13 +99,14 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
                     Log.d("WallsError", it)
                 }
                 _loadingWalls.value = false
-                currentPage.value += 1
+
             }
         }
     }
 
     fun getMoreData() {
         viewModelScope.launch {
+            currentPage.value += 1
             Log.d("Wallss", currentPage.value.toString())
             wallsData.value.loading = true
             wallsData.value = wallsRepository.getWallsPerPage(currentPage.value)

@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,8 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
@@ -30,6 +31,9 @@ import com.paraskcd.unitedwalls.components.Screen
 import com.paraskcd.unitedwalls.components.WallpaperImage
 import com.paraskcd.unitedwalls.utils.Constants
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+
 @Composable
 fun Home(
     openDrawer: (Boolean) -> Unit,
@@ -42,6 +46,15 @@ fun Home(
     val totalWalls = wallsViewModel.totalWalls.observeAsState().value
     val loadingWalls = wallsViewModel.loadingWalls.observeAsState().value
     val scrollState = rememberLazyListState()
+    val lifecycleState = LocalLifecycleOwner.current.lifecycle.observeAsState()
+    val state = lifecycleState.value
+
+    LaunchedEffect(key1 = state) {
+        if (state.toString() == "ON_RESUME") {
+            wallsViewModel.resetPage()
+            wallsViewModel.getWallsData()
+        }
+    }
 
     Screen(
         openDrawer = openDrawer,
@@ -106,4 +119,20 @@ fun Home(
             }
         }
     }
+}
+
+@Composable
+fun Lifecycle.observeAsState(): State<Lifecycle.Event> {
+    val state = remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
+    DisposableEffect(this) {
+        val observer = LifecycleEventObserver { _, event ->
+            state.value = event
+        }
+        this@observeAsState.addObserver(observer)
+        onDispose {
+            this@observeAsState.removeObserver(observer)
+        }
+    }
+
+    return state
 }

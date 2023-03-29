@@ -92,10 +92,10 @@ fun Categories(
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(160.dp))
+                Spacer(modifier = Modifier.height(60.dp))
             }
             item {
-                Spacer(modifier = Modifier.height(160.dp))
+                Spacer(modifier = Modifier.height(60.dp))
             }
         }
     }

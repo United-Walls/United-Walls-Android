@@ -26,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -41,8 +42,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val context = LocalContext.current
+            val app = context.applicationContext as UnitedWalls
             val wallsViewModel: WallsViewModel = hiltViewModel()
             val categoryViewModel: CategoryViewModel = hiltViewModel()
+            val privacyPolicyAccepted = remember {
+                mutableStateOf(app.preferences?.getBoolean("privacy-policy-accepted", false))
+            }
             val category = categoryViewModel.categoryById.observeAsState().value
             val loadingCategory = categoryViewModel.loadingCategoryById.observeAsState().value
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
@@ -75,107 +81,119 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                     ) {
-                        Home(
-                            openDrawer = { isDrawerActive = it },
-                            isDrawerActive = isDrawerActive,
-                            screenActive = screenActive,
-                            wallsViewModel = wallsViewModel,
-                            makeWallScreenActive = { wallScreenActive = it }
-                        )
-                        FavouriteWalls(
-                            openDrawer = { isDrawerActive = it },
-                            isDrawerActive = isDrawerActive,
-                            screenActive = screenActive,
-                            wallsViewModel = wallsViewModel,
-                            makeFavouriteWallsScreenActive = { favouriteWallScreenActive = it }
-                        )
-                        Categories(
-                            openDrawer = { isDrawerActive = it },
-                            isDrawerActive = isDrawerActive,
-                            screenActive = screenActive,
-                            categoryViewModel = categoryViewModel,
-                            makeCategoryScreenActive = {
-                                categoryViewModel.clearCategoryById()
-                                categoryActive = it
-                                screenActive = 4
-                            }
-                        )
-                        About(
-                            openDrawer = { isDrawerActive = it },
-                            isDrawerActive = isDrawerActive,
-                            screenActive = screenActive
-                        )
-                        CategoryScreen(
-                            openDrawer = { isDrawerActive = it },
-                            isDrawerActive = isDrawerActive,
-                            screenActive = screenActive,
-                            category = category,
-                            loadingCategory = loadingCategory,
-                            makeCategoryWallScreenActive = { flag, index ->
-                                categoryWallScreenActive = flag
-                                categoryWallIndex = index
-                            }
-                        )
-                        TopBar(
-                            screenActive = screenActive,
-                            openDrawer = { isDrawerActive = it },
-                            openScreen = { screenActive = it }
-                        )
-                        AnimatedVisibility(
-                            visible = isDrawerActive,
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xA5101010)))
-                        }
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                            AndroidView(modifier = Modifier.fillMaxWidth(), factory = { context ->
-                                AdView(context).apply {
-                                    // on below line specifying ad size
-                                    setAdSize(AdSize.BANNER)
-                                    // on below line specifying ad unit id
-                                    // currently added a test ad unit id.
-                                    adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.PUBLIC_AD
-                                    // calling load ad to load our ad.
-                                    loadAd(AdRequest.Builder().build())
+                        if (privacyPolicyAccepted.value == true) {
+                            Home(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                wallsViewModel = wallsViewModel,
+                                makeWallScreenActive = { wallScreenActive = it }
+                            )
+                            FavouriteWalls(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                wallsViewModel = wallsViewModel,
+                                makeFavouriteWallsScreenActive = { favouriteWallScreenActive = it }
+                            )
+                            Categories(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                categoryViewModel = categoryViewModel,
+                                makeCategoryScreenActive = {
+                                    categoryViewModel.clearCategoryById()
+                                    categoryActive = it
+                                    screenActive = 4
                                 }
+                            )
+                            About(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive
+                            )
+                            CategoryScreen(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                category = category,
+                                loadingCategory = loadingCategory,
+                                makeCategoryWallScreenActive = { flag, index ->
+                                    categoryWallScreenActive = flag
+                                    categoryWallIndex = index
+                                }
+                            )
+                            TopBar(
+                                screenActive = screenActive,
+                                openDrawer = { isDrawerActive = it },
+                                openScreen = { screenActive = it }
+                            )
+                            AnimatedVisibility(
+                                visible = isDrawerActive,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
+                                Box(modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xA5101010)))
+                            }
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                                AndroidView(modifier = Modifier.fillMaxWidth(), factory = { context ->
+                                    AdView(context).apply {
+                                        // on below line specifying ad size
+                                        setAdSize(AdSize.BANNER)
+                                        // on below line specifying ad unit id
+                                        // currently added a test ad unit id.
+                                        adUnitId = if (BuildConfig.DEBUG) Constants.TEST_AD else Constants.PUBLIC_AD
+                                        // calling load ad to load our ad.
+                                        loadAd(AdRequest.Builder().build())
+                                    }
+                                })
+                            }
+                            Drawer(
+                                isDrawerActive = isDrawerActive,
+                                openDrawer = { isDrawerActive = it },
+                                categoryViewModel = categoryViewModel,
+                                screenActive = screenActive,
+                                openScreen = { screenActive = it },
+                                makeCategoryScreenActive = {
+                                    categoryViewModel.clearCategoryById()
+                                    categoryActive = it
+                                    screenActive = 4
+                                    categoryViewModel.getCategoryById(it)
+                                },
+                                wallsViewModel = wallsViewModel
+                            )
+                            WallScreen(
+                                wallScreenActive = wallScreenActive,
+                                makeWallScreenActive = { wallScreenActive = it },
+                                wallsViewModel = wallsViewModel,
+                                categoryViewModel = categoryViewModel
+                            )
+                            CategoryWallScreen(
+                                categoryWallScreenActive = categoryWallScreenActive,
+                                makeCategoryWallScreenActive = { categoryWallScreenActive = it },
+                                category = category,
+                                categoryWallIndex = categoryWallIndex,
+                                wallsViewModel = wallsViewModel
+                            )
+                            FavouriteWallScreen(
+                                favouriteWallScreenActive = favouriteWallScreenActive,
+                                makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
+                                wallsViewModel = wallsViewModel,
+                                categoryViewModel = categoryViewModel
+                            )
+                        } else {
+                            PrivacyPolicy(acceptPrivacyPolicy = {
+                                privacyPolicyAccepted.value = true
+                                app.preferences?.edit()?.putBoolean("privacy-policy-accepted", true)?.apply()
                             })
+                            TopBar(
+                                screenActive = screenActive,
+                                openDrawer = { isDrawerActive = it },
+                                openScreen = { screenActive = it }
+                            )
                         }
-                        Drawer(
-                            isDrawerActive = isDrawerActive,
-                            openDrawer = { isDrawerActive = it },
-                            categoryViewModel = categoryViewModel,
-                            screenActive = screenActive,
-                            openScreen = { screenActive = it },
-                            makeCategoryScreenActive = {
-                                categoryViewModel.clearCategoryById()
-                                categoryActive = it
-                                screenActive = 4
-                                categoryViewModel.getCategoryById(it)
-                            },
-                            wallsViewModel = wallsViewModel
-                        )
-                        WallScreen(
-                            wallScreenActive = wallScreenActive,
-                            makeWallScreenActive = { wallScreenActive = it },
-                            wallsViewModel = wallsViewModel,
-                            categoryViewModel = categoryViewModel
-                        )
-                        CategoryWallScreen(
-                            categoryWallScreenActive = categoryWallScreenActive,
-                            makeCategoryWallScreenActive = { categoryWallScreenActive = it },
-                            category = category,
-                            categoryWallIndex = categoryWallIndex,
-                            wallsViewModel = wallsViewModel
-                        )
-                        FavouriteWallScreen(
-                            favouriteWallScreenActive = favouriteWallScreenActive,
-                            makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
-                            wallsViewModel = wallsViewModel,
-                            categoryViewModel = categoryViewModel
-                        )
                     }
                 }
             }

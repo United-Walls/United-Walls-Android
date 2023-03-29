@@ -42,6 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionRequired
+import com.google.accompanist.permissions.rememberPermissionState
 import com.mxalbert.zoomable.OverZoomConfig
 import com.mxalbert.zoomable.rememberZoomableState
 import com.paraskcd.unitedwalls.R
@@ -58,7 +61,9 @@ import java.io.IOException
 import java.util.*
 import kotlin.concurrent.schedule
 
-@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class,
+    ExperimentalPermissionsApi::class
+)
 @Composable
 fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
     val lazyListState = rememberLazyListState()
@@ -71,6 +76,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
     var infoState: Boolean by remember { mutableStateOf(false) }
     val categories = categoryViewModel.categories.observeAsState().value
+    val storagePermission = rememberPermissionState(permission = android.Manifest.permission.READ_EXTERNAL_STORAGE)
 
     LaunchedEffect(key1 = wallScreenActive) {
         Timer().schedule(0) {

@@ -13,7 +13,7 @@ android {
         applicationId "com.paraskcd.unitedwalls"
         minSdk 28
         targetSdk 33
-        versionCode 3
+        versionCode 5
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -106,6 +106,8 @@ dependencies {
     kapt "androidx.room:room-compiler:2.5.0"
 
     implementation "com.mxalbert.zoomable:zoomable:1.5.1"
+
+    implementation "com.google.accompanist:accompanist-permissions:0.20.0"
 }
 
 kapt {
