@@ -39,6 +39,7 @@ fun Drawer(
     makeCategoryScreenActive: (id: String) -> Unit,
     wallsViewModel: WallsViewModel
 ) {
+    var favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
     var pinnedSize: Dp by remember { mutableStateOf(0.dp) }
     val categories = categoryViewModel.categories.observeAsState().value
     BackHandler(enabled = isDrawerActive) {
@@ -104,7 +105,7 @@ fun Drawer(
                     screenIndex = 0
                 )
             }
-            if (wallsViewModel.favouritePopulatedWallsStore.isNotEmpty()) {
+            if (favouriteWalls.isNotEmpty()) {
                 item {
                     DrawerItem(
                         onClick = {
@@ -150,17 +151,26 @@ fun Drawer(
                 items(categories.size) { index ->
                     val category = categories[index]
                     if (index == 0) {
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)).background(MaterialTheme.colorScheme.tertiary).clickable {
-                            openDrawer(false)
-                            makeCategoryScreenActive(category._id)
-                        }) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+                                .background(MaterialTheme.colorScheme.tertiary)
+                                .clickable {
+                                    openDrawer(false)
+                                    makeCategoryScreenActive(category._id)
+                                }) {
                             Text(text = category.name, modifier = Modifier.padding(horizontal = 62.dp, vertical = 22.dp))
                         }
                     } else {
-                        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.tertiary).clickable {
-                            openDrawer(false)
-                            makeCategoryScreenActive(category._id)
-                        }) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.tertiary)
+                                .clickable {
+                                    openDrawer(false)
+                                    makeCategoryScreenActive(category._id)
+                                }) {
                             Text(text = category.name, modifier = Modifier.padding(horizontal = 62.dp, vertical = 22.dp))
                         }
                     }

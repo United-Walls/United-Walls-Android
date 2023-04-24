@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.repository
 
+import android.util.Log
 import com.paraskcd.unitedwalls.data.DataOrException
 import com.paraskcd.unitedwalls.data.UnitedWallsDatabaseDao
 import com.paraskcd.unitedwalls.model.FavouriteWallsTable
@@ -14,8 +15,89 @@ import javax.inject.Inject
 
 class WallsRepository @Inject constructor(private val api: WallsApi, private val dao: UnitedWallsDatabaseDao) {
     private val allWallsDataOrException = DataOrException<Walls, Boolean, Exception>()
-    private val wallsByPage = DataOrException<
-            List<WallsItem>, Boolean, Exception>()
+    private val wallsByPage = DataOrException<List<WallsItem>, Boolean, Exception>()
+    private val mostDownloadedWalls = DataOrException<List<WallsItem>, Boolean, java.lang.Exception>()
+    private val mostFavouritedWalls = DataOrException<List<WallsItem>, Boolean, java.lang.Exception>()
+    private val wallOfDay = DataOrException<WallsItem, Boolean, java.lang.Exception>()
+    private val wallById = DataOrException<WallsItem, Boolean, java.lang.Exception>()
+
+    suspend fun getWallOfDay(): DataOrException<WallsItem, Boolean, java.lang.Exception> {
+        try {
+            wallOfDay.loading = true
+            wallOfDay.data = api.wallOfDay()
+
+            if (wallOfDay.data.toString().isNotEmpty()) {
+                wallOfDay.loading = false
+            }
+        } catch (ex: Exception) {
+            wallOfDay.e = ex
+        }
+
+        return wallOfDay
+    }
+
+    suspend fun getWallById(wallId: String): DataOrException<WallsItem, Boolean, java.lang.Exception> {
+        try {
+            wallById.loading = true
+            wallById.data = api.getWallById(wallId)
+
+            if (wallById.data.toString().isNotEmpty()) {
+                wallById.loading = false
+            }
+        } catch (ex: Exception) {
+            wallById.e = ex
+        }
+
+        return wallById
+    }
+
+    suspend fun addToServer(wallId: String, apiCall: String) {
+        try {
+            if (apiCall == "addDownloaded") {
+                api.addDownloaded(wallId)
+            }
+
+            if (apiCall == "addFav") {
+                api.addFavourite(wallId)
+            }
+
+            if (apiCall == "removeFav") {
+                api.removeFavourite(wallId)
+            }
+        } catch (ex: Exception) {
+            Log.d("Error - ", "Couldn't add to server because - \n $ex")
+        }
+    }
+
+    suspend fun getMostDownloadedWalls(): DataOrException<List<WallsItem>, Boolean, java.lang.Exception> {
+        try {
+            mostDownloadedWalls.loading = true
+            mostDownloadedWalls.data = api.getAllMostDownloadedWalls()
+
+            if (mostDownloadedWalls.data.toString().isNotEmpty()) {
+                mostDownloadedWalls.loading = false
+            }
+        } catch (ex: Exception) {
+            mostDownloadedWalls.e = ex
+        }
+
+        return mostDownloadedWalls
+    }
+
+    suspend fun getMostFavouritedWalls(): DataOrException<List<WallsItem>, Boolean, java.lang.Exception> {
+        try {
+            mostFavouritedWalls.loading = true
+            mostFavouritedWalls.data = api.getAllMostFavouritedWalls()
+
+            if (mostFavouritedWalls.data.toString().isNotEmpty()) {
+                mostFavouritedWalls.loading = false
+            }
+        } catch (ex: Exception) {
+            mostFavouritedWalls.e = ex
+        }
+
+        return mostFavouritedWalls
+    }
 
     suspend fun getWalls(): DataOrException<Walls, Boolean, java.lang.Exception> {
         try {
@@ -32,8 +114,7 @@ class WallsRepository @Inject constructor(private val api: WallsApi, private val
         return allWallsDataOrException
     }
 
-    suspend fun getWallsPerPage(currentPage: Int): DataOrException<
-            List<WallsItem>, Boolean, java.lang.Exception> {
+    suspend fun getWallsPerPage(currentPage: Int): DataOrException<List<WallsItem>, Boolean, java.lang.Exception> {
         try {
             wallsByPage.loading = true
             wallsByPage.data = api.getWallsDataByPage(currentPage)

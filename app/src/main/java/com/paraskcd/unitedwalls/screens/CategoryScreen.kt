@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -64,6 +66,11 @@ fun CategoryScreen(
                 Spacer(modifier = Modifier.height(70.dp))
             }
             category?.let {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(Modifier.padding(horizontal = 15.dp, vertical = 25.dp)) {
+                        Text(text = category.name, fontSize = 18.sp)
+                    }
+                }
                 items(it.walls.size) { index ->
                     val wall = it.walls[index]
 

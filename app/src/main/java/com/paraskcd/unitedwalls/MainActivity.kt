@@ -54,6 +54,11 @@ class MainActivity : ComponentActivity() {
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
             var screenActive: Int by remember { mutableStateOf(0) }
             var categoryActive: String? by remember { mutableStateOf(null) }
+            var wallOfDayScreenActive: Boolean by remember { mutableStateOf(false) }
+            var mostLikedScreenActive: Boolean by remember { mutableStateOf(false) }
+            var mostDownloadedScreenActive: Boolean by remember {
+                mutableStateOf(false)
+            }
             var wallScreenActive: Boolean by remember { mutableStateOf(false) }
             var categoryWallScreenActive: Boolean by remember { mutableStateOf(false) }
             var categoryWallIndex: Int by remember { mutableStateOf(0) }
@@ -87,7 +92,16 @@ class MainActivity : ComponentActivity() {
                                 isDrawerActive = isDrawerActive,
                                 screenActive = screenActive,
                                 wallsViewModel = wallsViewModel,
-                                makeWallScreenActive = { wallScreenActive = it }
+                                makeWallScreenActive = { wallScreenActive = it },
+                                makeWallOfDayScreenActive = { wallOfDayScreenActive = it },
+                                makeMostLikedWallScreenActive = { mostLikedScreenActive = it },
+                                makeMostDownloadedWallScreenActive = { mostDownloadedScreenActive = it },
+                                makeMostLikedActive = {
+                                    screenActive = 8
+                                },
+                                makeMostDownloadedActive = {
+                                    screenActive = 7
+                                }
                             )
                             FavouriteWalls(
                                 openDrawer = { isDrawerActive = it },
@@ -122,6 +136,20 @@ class MainActivity : ComponentActivity() {
                                     categoryWallScreenActive = flag
                                     categoryWallIndex = index
                                 }
+                            )
+                            MostLiked(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                wallsViewModel = wallsViewModel,
+                                makeMostLikedWallScreenActive = { mostLikedScreenActive = it }
+                            )
+                            MostDownloaded(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                wallsViewModel = wallsViewModel,
+                                makeMostDownloadedWallScreenActive = { mostDownloadedScreenActive = it }
                             )
                             TopBar(
                                 screenActive = screenActive,
@@ -163,6 +191,24 @@ class MainActivity : ComponentActivity() {
                                     categoryViewModel.getCategoryById(it)
                                 },
                                 wallsViewModel = wallsViewModel
+                            )
+                            WallOfDayScreen(
+                                wallOfDayScreenActive = wallOfDayScreenActive,
+                                makeWallOfDayScreenActive = { wallOfDayScreenActive = it },
+                                wallsViewModel = wallsViewModel,
+                                categoryViewModel = categoryViewModel
+                            )
+                            MostLikedWallScreen(
+                                mostLikedWallScreen = mostLikedScreenActive,
+                                makeMostLikedWallScreenActive = { mostLikedScreenActive = it },
+                                wallsViewModel = wallsViewModel,
+                                categoryViewModel = categoryViewModel
+                            )
+                            MostDownloadedWallScreen(
+                                mostDownloadedWallScreenActive = mostDownloadedScreenActive,
+                                makeMostDownloadedWallScreenActive = { mostDownloadedScreenActive = it },
+                                wallsViewModel = wallsViewModel,
+                                categoryViewModel = categoryViewModel
                             )
                             WallScreen(
                                 wallScreenActive = wallScreenActive,

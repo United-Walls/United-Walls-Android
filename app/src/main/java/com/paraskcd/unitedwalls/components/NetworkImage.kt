@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
@@ -147,5 +148,31 @@ fun WallpaperScreenImage(imageURL: String, imageDescription: String, width: Dp) 
                 color = MaterialTheme.colorScheme.onPrimary
             )
         }
+    }
+}
+
+@Composable
+fun WallpaperBackground(imageURL: String, imageDescription: String) {
+    val context = LocalContext.current
+
+    val painter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(context = context).data(imageURL).diskCacheKey(imageURL).memoryCacheKey(imageURL).build(),
+        imageLoader = ImageLoader.Builder(context = context).components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }.crossfade(true).build()
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        Image(
+            painter = painter,
+            contentDescription = imageDescription,
+            modifier = Modifier
+                .fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
     }
 }

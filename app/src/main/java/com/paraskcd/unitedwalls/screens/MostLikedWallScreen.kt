@@ -1,22 +1,24 @@
 package com.paraskcd.unitedwalls.screens
 
+import android.Manifest
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.*
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -28,50 +30,51 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
-import com.paraskcd.unitedwalls.model.Category
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.SnapOffsets
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.concurrent.schedule
 
-@OptIn(ExperimentalSnapperApi::class)
+@OptIn(
+    ExperimentalSnapperApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class,
+    ExperimentalPermissionsApi::class
+)
 @Composable
-fun CategoryWallScreen(
-    categoryWallScreenActive: Boolean,
-    makeCategoryWallScreenActive: (Boolean) -> Unit,
-    category: Category?,
-    categoryWallIndex: Int,
-    wallsViewModel: WallsViewModel
-) {
+fun MostLikedWallScreen(mostLikedWallScreen: Boolean, makeMostLikedWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
     val lazyListState = rememberLazyListState()
+    val walls = wallsViewModel.mostFavouritedWalls.observeAsState().value
+    val wallIndex = wallsViewModel.selectedWallIndex.value
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
     var infoState: Boolean by remember { mutableStateOf(false) }
+    val categories = categoryViewModel.categories.observeAsState().value
+    val storagePermission = rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
 
-    LaunchedEffect(key1 = categoryWallScreenActive) {
+    LaunchedEffect(key1 = mostLikedWallScreen) {
         Timer().schedule(0) {
             coroutineScope.launch {
-                lazyListState.scrollToItem(index = categoryWallIndex)
+                lazyListState.scrollToItem(index = wallIndex)
             }
         }
     }
 
-    BackHandler(enabled = categoryWallScreenActive) {
-        makeCategoryWallScreenActive(false)
+    BackHandler(enabled = mostLikedWallScreen) {
+        makeMostLikedWallScreenActive(false)
     }
 
     AnimatedVisibility(
-        visible = categoryWallScreenActive,
+        visible = mostLikedWallScreen,
         enter = expandVertically() + fadeIn(),
         exit = shrinkVertically() + fadeOut()
     ) {
@@ -84,15 +87,22 @@ fun CategoryWallScreen(
             LazyRow(
                 modifier = Modifier.padding(vertical = 32.dp),
                 state = lazyListState,
-                flingBehavior = rememberSnapperFlingBehavior(
-                    lazyListState = lazyListState,
-                    snapOffsetForItem = SnapOffsets.Center,
-                )
+                flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState)
             ) {
-                category?.let {
-                    items(it.walls.size) { index ->
-                        val wall = it.walls[index]
+                walls?.size?.let {
+                    items(it) { index ->
+                        val wall = walls[index]
                         val wallName = wall.file_name.replace('_', ' ')
+                        var category: String? = null
+
+                        if (categories != null) {
+                            for (cat in categories) {
+                                if (cat._id == wall.category) {
+                                    category = cat.name
+                                    break
+                                }
+                            }
+                        }
 
                         wall.file_url?.let { fileURL ->
                             var liked: Boolean by remember {
@@ -112,14 +122,16 @@ fun CategoryWallScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxHeight(),
+                                    .fillMaxSize(),
                                 contentAlignment = Alignment.BottomEnd
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    Text(text = category.name)
+                                    category?.let {
+                                        Text(text = category)
+                                    }
                                     WallpaperScreenImage(
                                         imageURL = fileURL,
                                         imageDescription = wall.file_name,
@@ -297,7 +309,7 @@ fun CategoryWallScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 IconButton(onClick = {
-                    makeCategoryWallScreenActive(false)
+                    makeMostLikedWallScreenActive(false)
                 }) {
                     Image(
                         painter = painterResource(id = R.drawable.arrow),

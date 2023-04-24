@@ -48,6 +48,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.mxalbert.zoomable.OverZoomConfig
 import com.mxalbert.zoomable.rememberZoomableState
 import com.paraskcd.unitedwalls.R
+import com.paraskcd.unitedwalls.components.WallpaperBackground
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.model.FavouriteWallsTable
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
@@ -233,6 +234,9 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                 liked = true
                                                 Toast.makeText(context, "Wallpaper added to your Favourites! :)", Toast.LENGTH_LONG).show()
                                                 wallsViewModel.getPopulatedFavouriteWalls()
+                                                coroutineScope.launch {
+                                                    wallsViewModel.addToServer(wall._id, "addFav")
+                                                }
                                             } else {
                                                 for (wallF in favouriteWalls) {
                                                     if (wall._id == wallF.wallpaperId) {
@@ -240,6 +244,9 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                         liked = false
                                                         Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
                                                         wallsViewModel.getPopulatedFavouriteWalls()
+                                                        coroutineScope.launch {
+                                                            wallsViewModel.addToServer(wall._id, "removeFav")
+                                                        }
                                                         break
                                                     }
                                                 }
@@ -291,6 +298,9 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                                 val imageFile = snapshot.data.toFile()
                                                 saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name)
                                                 Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
+                                                coroutineScope.launch {
+                                                    wallsViewModel.addToServer(wall._id, "addDownloaded")
+                                                }
                                             }
                                         },
                                         colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier

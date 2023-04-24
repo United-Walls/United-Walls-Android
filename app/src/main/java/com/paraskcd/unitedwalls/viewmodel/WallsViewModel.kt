@@ -33,12 +33,21 @@ import javax.inject.Inject
 @HiltViewModel
 class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepository, private val wallpaperManager: WallpaperManager): ViewModel() {
     private val wallsDataCount: MutableState<DataOrException<Walls, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
-    private val wallsData: MutableState<DataOrException<
-            List<WallsItem>, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+    private val wallsData: MutableState<DataOrException<List<WallsItem>, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+    private val mostDownloadedWallsData: MutableState<DataOrException<List<WallsItem>, Boolean, Exception>> = mutableStateOf(
+        DataOrException(null, true, null)
+    )
+    private val mostFavouritedWallsData: MutableState<DataOrException<List<WallsItem>, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, null))
+    private val wallOfTheDayData: MutableState<DataOrException<WallsItem, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, null))
     private val currentPage: MutableState<Int> = mutableStateOf(0)
 
+    private val _mostDownloadedWalls = MutableLiveData<List<WallsItem>>()
+    private val _mostFavouritedWalls = MutableLiveData<List<WallsItem>>()
+    private val _wallOfTheDay = MutableLiveData<WallsItem>()
     private val _walls = MutableLiveData<List<WallsItem>>()
     private val _loadingWalls = MutableLiveData(true)
+    private val _loadingMostDownloadedWalls = MutableLiveData(true)
+    private val _loadingMostFavouritedWalls = MutableLiveData(true)
     private val _totalWalls = MutableLiveData(0)
 
     private val _favouriteWalls = MutableStateFlow<List<FavouriteWallsTable>>(emptyList())
@@ -51,6 +60,16 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
 
     val walls: LiveData<List<WallsItem>>
         get() = _walls
+    val mostDownloadedWalls: LiveData<List<WallsItem>>
+        get() = _mostDownloadedWalls
+    val mostFavouritedWalls: LiveData<List<WallsItem>>
+        get() = _mostFavouritedWalls
+    val wallOfTheDay: LiveData<WallsItem>
+        get() = _wallOfTheDay
+    val loadingMostFavouritedWalls: LiveData<Boolean>
+        get() = _loadingMostFavouritedWalls
+    val loadingMostDownloadedWalls: LiveData<Boolean>
+        get() = _loadingMostDownloadedWalls
     val loadingWalls: LiveData<Boolean>
         get() = _loadingWalls
     val totalWalls: LiveData<Int>
@@ -65,6 +84,15 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
         }
         viewModelScope.launch(Dispatchers.IO) {
             getWallsCount()
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            getWallOfTheDay()
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            getMostDownloadedWallsData()
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            getMostFavouritedWallsData()
         }
     }
 
@@ -84,6 +112,56 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
 
     fun resetPage() {
         currentPage.value = 0
+    }
+
+    fun getWallOfTheDay() {
+        viewModelScope.launch {
+            _wallOfTheDay.value = WallsItem(0, "", "", "", "", "", "", "", "", "", "", "")
+            wallOfTheDayData.value.loading = true
+            wallOfTheDayData.value = wallsRepository.getWallOfDay()
+            if (wallOfTheDayData.value.data.toString().isNotEmpty()) {
+                wallOfTheDayData.value.loading = false
+                _wallOfTheDay.value = wallOfTheDayData.value.data
+                Log.d("Wallss of the Day", wallOfTheDay.value.toString())
+                wallOfTheDayData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
+            }
+        }
+    }
+
+    fun getMostDownloadedWallsData() {
+        viewModelScope.launch {
+            _mostDownloadedWalls.value = emptyList()
+            mostDownloadedWallsData.value.loading = true
+            mostDownloadedWallsData.value = wallsRepository.getMostDownloadedWalls()
+            if (mostDownloadedWallsData.value.data.toString().isNotEmpty()) {
+                mostDownloadedWallsData.value.loading = false
+                _mostDownloadedWalls.value = mostDownloadedWallsData.value.data
+                Log.d("Wallss Most Downloaded Size", mostDownloadedWalls.value!!.size.toString())
+                mostDownloadedWallsData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
+                _loadingMostDownloadedWalls.value = false
+            }
+        }
+    }
+
+    fun getMostFavouritedWallsData() {
+        viewModelScope.launch {
+            _mostFavouritedWalls.value = emptyList()
+            mostFavouritedWallsData.value.loading = true
+            mostFavouritedWallsData.value = wallsRepository.getMostFavouritedWalls()
+            if (mostFavouritedWallsData.value.data.toString().isNotEmpty()) {
+                mostFavouritedWallsData.value.loading = false
+                _mostFavouritedWalls.value = mostFavouritedWallsData.value.data
+                Log.d("Wallss Most Downloaded Size", mostFavouritedWalls.value!!.size.toString())
+                mostFavouritedWallsData.value.e?.localizedMessage?.let {
+                    Log.d("WallsError", it)
+                }
+                _loadingMostFavouritedWalls.value = false
+            }
+        }
     }
 
     fun getWallsData() {
@@ -149,12 +227,13 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
     fun getPopulatedFavouriteWalls() {
         viewModelScope.launch {
             favouritePopulatedWallsStore = mutableListOf()
-            if (walls.value != null) {
-                for (wall in favouriteWalls.value) {
-                    for (wallItem in walls.value!!) {
-                        if (wallItem._id == wall.wallpaperId) {
-                            favouritePopulatedWallsStore.add(wallItem)
-                        }
+            val wallById: MutableState<DataOrException<WallsItem, Boolean, Exception>> = mutableStateOf(DataOrException(null, true, Exception("")))
+            for (wall in favouriteWalls.value) {
+                wallById.value = DataOrException(null, true, Exception(""))
+                wallById.value = wallsRepository.getWallById(wall.wallpaperId)
+                if (wallById.value.data.toString().isNotEmpty()) {
+                    wallById.value.data?.let {
+                        favouritePopulatedWallsStore.add(it)
                     }
                 }
             }
@@ -191,5 +270,9 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
             contentResolver, bitmap, System.currentTimeMillis().toString(), null
         )
         return Uri.parse(path)
+    }
+
+    suspend fun addToServer(wallId: String, apiCall: String) {
+        wallsRepository.addToServer(wallId, apiCall)
     }
 }
