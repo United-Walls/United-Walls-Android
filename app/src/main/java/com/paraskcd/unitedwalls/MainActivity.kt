@@ -36,6 +36,7 @@ import com.paraskcd.unitedwalls.components.Drawer
 import com.paraskcd.unitedwalls.screens.*
 import com.paraskcd.unitedwalls.utils.Constants
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.UploadersViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -46,11 +47,15 @@ class MainActivity : ComponentActivity() {
             val app = context.applicationContext as UnitedWalls
             val wallsViewModel: WallsViewModel = hiltViewModel()
             val categoryViewModel: CategoryViewModel = hiltViewModel()
+            val uploadersViewModel: UploadersViewModel = hiltViewModel()
             val privacyPolicyAccepted = remember {
                 mutableStateOf(app.preferences?.getBoolean("privacy-policy-accepted", false))
             }
             val category = categoryViewModel.categoryById.observeAsState().value
+            val uploaderData = uploadersViewModel.selectedUploader.observeAsState().value
+            val uploaderWallCount = uploadersViewModel.totalWallsOfUploader.observeAsState().value
             val loadingCategory = categoryViewModel.loadingCategoryById.observeAsState().value
+            val loadingUploader = uploadersViewModel.loadingWalls.observeAsState().value
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
             var screenActive: Int by remember { mutableStateOf(0) }
             var categoryActive: String? by remember { mutableStateOf(null) }
@@ -61,10 +66,13 @@ class MainActivity : ComponentActivity() {
             }
             var wallScreenActive: Boolean by remember { mutableStateOf(false) }
             var categoryWallScreenActive: Boolean by remember { mutableStateOf(false) }
+            var uploaderWallScreenActive: Boolean by remember { mutableStateOf(false) }
             var categoryWallIndex: Int by remember { mutableStateOf(0) }
+            var uploaderWallIndex: Int by remember { mutableStateOf(0) }
             var favouriteWallScreenActive: Boolean by remember {
                 mutableStateOf(false)
             }
+            val selectedUploader = uploadersViewModel.selectedUploader.observeAsState().value
 
             LaunchedEffect(key1 = screenActive == 4) {
                 if (categoryActive != null) {
@@ -74,6 +82,10 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(key1 = isDrawerActive == true) {
                 wallsViewModel.getPopulatedFavouriteWalls()
+            }
+
+            LaunchedEffect(key1 = screenActive != 10) {
+                uploadersViewModel.resetPage()
             }
 
             UWallsTheme {
@@ -121,6 +133,16 @@ class MainActivity : ComponentActivity() {
                                     screenActive = 4
                                 }
                             )
+                            Uploaders(
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                uploadersViewModel = uploadersViewModel,
+                                makeUploadersScreenActive = {
+                                    uploadersViewModel.getUploaderWallsData(it)
+                                    screenActive = 10
+                                }
+                            )
                             About(
                                 openDrawer = { isDrawerActive = it },
                                 isDrawerActive = isDrawerActive,
@@ -135,6 +157,19 @@ class MainActivity : ComponentActivity() {
                                 makeCategoryWallScreenActive = { flag, index ->
                                     categoryWallScreenActive = flag
                                     categoryWallIndex = index
+                                }
+                            )
+                            UploaderScreen(
+                                uploadersViewModel = uploadersViewModel,
+                                openDrawer = { isDrawerActive = it },
+                                isDrawerActive = isDrawerActive,
+                                screenActive = screenActive,
+                                uploader = uploaderData,
+                                uploaderWallsCount = uploaderWallCount,
+                                loadingUploader = loadingUploader,
+                                makeUploaderWallScreenActive = { flag, index ->
+                                    uploaderWallScreenActive = flag
+                                    uploaderWallIndex = index
                                 }
                             )
                             MostLiked(
@@ -228,6 +263,13 @@ class MainActivity : ComponentActivity() {
                                 makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
                                 wallsViewModel = wallsViewModel,
                                 categoryViewModel = categoryViewModel
+                            )
+                            UploaderWallsScreen(
+                                uploaderWallScreenActive = uploaderWallScreenActive,
+                                makeUploaderWallScreenActive = { uploaderWallScreenActive = it },
+                                uploader = uploaderData,
+                                uploaderWallIndex = uploaderWallIndex,
+                                wallsViewModel = wallsViewModel
                             )
                         } else {
                             PrivacyPolicy(acceptPrivacyPolicy = {

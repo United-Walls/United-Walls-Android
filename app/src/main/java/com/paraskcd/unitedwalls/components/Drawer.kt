@@ -140,6 +140,19 @@ fun Drawer(
                         openDrawer(false)
                         openScreen(it)
                     },
+                    icon = painterResource(id = R.drawable.home),
+                    iconDescription = "Creators Icon",
+                    title = "Creators",
+                    screenActive = screenActive == 9 || screenActive == 10,
+                    screenIndex = 9
+                )
+            }
+            item {
+                DrawerItem(
+                    onClick = {
+                        openDrawer(false)
+                        openScreen(it)
+                    },
                     icon = painterResource(id = R.drawable.category),
                     iconDescription = "Category Icon",
                     title = "Categories",
