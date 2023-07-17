@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -35,8 +37,10 @@ import coil.imageLoader
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import com.paraskcd.unitedwalls.R
+import com.paraskcd.unitedwalls.components.WallpaperBackground
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.UploadersViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import kotlinx.coroutines.launch
@@ -48,7 +52,7 @@ import kotlin.concurrent.schedule
     ExperimentalPermissionsApi::class
 )
 @Composable
-fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDownloadedWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
+fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDownloadedWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel, uploadersViewModel: UploadersViewModel) {
     val lazyListState = rememberLazyListState()
     val walls = wallsViewModel.mostDownloadedWalls.observeAsState().value
     val wallIndex = wallsViewModel.selectedWallIndex.value
@@ -60,11 +64,28 @@ fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDo
     var infoState: Boolean by remember { mutableStateOf(false) }
     val categories = categoryViewModel.categories.observeAsState().value
     val storagePermission = rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+    val username = uploadersViewModel.uploaderUsername.observeAsState().value
+    var thumbnailBackground: String? by remember { mutableStateOf(null) }
 
     LaunchedEffect(key1 = mostDownloadedWallScreenActive) {
         Timer().schedule(0) {
             coroutineScope.launch {
                 lazyListState.scrollToItem(index = wallIndex)
+                if (walls != null) {
+                    uploadersViewModel.getUploaderThroughWall(walls[wallIndex]._id)
+                    thumbnailBackground = walls[wallIndex].thumbnail_url
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = lazyListState.firstVisibleItemIndex) {
+        Timer().schedule(0) {
+            coroutineScope.launch {
+                if (walls != null) {
+                    uploadersViewModel.getUploaderThroughWall(walls[lazyListState.firstVisibleItemIndex]._id)
+                    thumbnailBackground = walls[lazyListState.firstVisibleItemIndex].thumbnail_url
+                }
             }
         }
     }
@@ -84,6 +105,34 @@ fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDo
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
+            if (thumbnailBackground != null) {
+                WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
+            }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
+                        )
+                    )
+                ) {
+                    IconButton(onClick = {
+                        makeMostDownloadedWallScreenActive(false)
+                    }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.arrow),
+                            contentDescription = "Arrow",
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .size(18.dp)
+                        )
+                    }
+                }
+            }
             LazyRow(
                 modifier = Modifier.padding(vertical = 32.dp),
                 state = lazyListState,
@@ -181,7 +230,7 @@ fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDo
                                                     .width(230.dp)
                                             ) {
                                                 Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                                Text(text = " $addedBy", modifier = Modifier
+                                                Text(text = " $username", modifier = Modifier
                                                     .padding(top = 6.dp, bottom = 12.dp))
                                             }
                                         }
@@ -303,21 +352,6 @@ fun MostDownloadedWallScreen(mostDownloadedWallScreenActive: Boolean, makeMostDo
                             }
                         }
                     }
-                }
-            }
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                IconButton(onClick = {
-                    makeMostDownloadedWallScreenActive(false)
-                }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.arrow),
-                        contentDescription = "Arrow",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(18.dp)
-                    )
                 }
             }
         }

@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -171,8 +173,9 @@ fun WallpaperBackground(imageURL: String, imageDescription: String) {
             painter = painter,
             contentDescription = imageDescription,
             modifier = Modifier
-                .fillMaxSize(),
-            contentScale = ContentScale.Crop
+                .fillMaxSize()
+                .blur(radius = 40.dp),
+            contentScale = ContentScale.Crop,
         )
     }
 }

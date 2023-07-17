@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -30,9 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.imageLoader
 import com.paraskcd.unitedwalls.R
+import com.paraskcd.unitedwalls.components.WallpaperBackground
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.model.Category
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.UploadersViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
 import dev.chrisbanes.snapper.SnapOffsets
@@ -48,7 +52,8 @@ fun CategoryWallScreen(
     makeCategoryWallScreenActive: (Boolean) -> Unit,
     category: Category?,
     categoryWallIndex: Int,
-    wallsViewModel: WallsViewModel
+    wallsViewModel: WallsViewModel,
+    uploadersViewModel: UploadersViewModel
 ) {
     val lazyListState = rememberLazyListState()
     val configuration = LocalConfiguration.current
@@ -57,11 +62,28 @@ fun CategoryWallScreen(
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
     var infoState: Boolean by remember { mutableStateOf(false) }
+    val username = uploadersViewModel.uploaderUsername.observeAsState().value
+    var thumbnailBackground: String? by remember { mutableStateOf(null) }
 
     LaunchedEffect(key1 = categoryWallScreenActive) {
         Timer().schedule(0) {
             coroutineScope.launch {
                 lazyListState.scrollToItem(index = categoryWallIndex)
+                if (category != null) {
+                    uploadersViewModel.getUploaderThroughWall(category.walls[categoryWallIndex]._id)
+                    thumbnailBackground = category.walls[categoryWallIndex].thumbnail_url
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = lazyListState.firstVisibleItemIndex) {
+        Timer().schedule(0) {
+            coroutineScope.launch {
+                if (category != null) {
+                    uploadersViewModel.getUploaderThroughWall(category.walls[lazyListState.firstVisibleItemIndex]._id)
+                    thumbnailBackground = category.walls[lazyListState.firstVisibleItemIndex].thumbnail_url
+                }
             }
         }
     }
@@ -81,6 +103,34 @@ fun CategoryWallScreen(
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
+            if (thumbnailBackground != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
+            }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
+                        )
+                    )
+                ) {
+                    IconButton(onClick = {
+                        makeCategoryWallScreenActive(false)
+                    }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.arrow),
+                            contentDescription = "Arrow",
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .size(18.dp)
+                        )
+                    }
+                }
+            }
             LazyRow(
                 modifier = Modifier.padding(vertical = 32.dp),
                 state = lazyListState,
@@ -169,7 +219,7 @@ fun CategoryWallScreen(
                                                     .width(230.dp)
                                             ) {
                                                 Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                                Text(text = " $addedBy", modifier = Modifier
+                                                Text(text = " $username", modifier = Modifier
                                                     .padding(top = 6.dp, bottom = 12.dp))
                                             }
                                         }
@@ -291,21 +341,6 @@ fun CategoryWallScreen(
                             }
                         }
                     }
-                }
-            }
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                IconButton(onClick = {
-                    makeCategoryWallScreenActive(false)
-                }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.arrow),
-                        contentDescription = "Arrow",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(18.dp)
-                    )
                 }
             }
         }

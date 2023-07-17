@@ -51,9 +51,12 @@ class MainActivity : ComponentActivity() {
             val privacyPolicyAccepted = remember {
                 mutableStateOf(app.preferences?.getBoolean("privacy-policy-accepted", false))
             }
-            val category = categoryViewModel.categoryById.observeAsState().value
+            val category = categoryViewModel.selectedCategory.observeAsState().value
+            val categoryWallsCount = categoryViewModel.selectedCategoryWallCount.observeAsState().value
+            val loadingCategoryWalls = categoryViewModel.loadingWalls.observeAsState().value
             val uploaderData = uploadersViewModel.selectedUploader.observeAsState().value
             val uploaderWallCount = uploadersViewModel.totalWallsOfUploader.observeAsState().value
+            val uploaderUsername = uploadersViewModel.uploaderUsername.observeAsState().value
             val loadingCategory = categoryViewModel.loadingCategoryById.observeAsState().value
             val loadingUploader = uploadersViewModel.loadingWalls.observeAsState().value
             var isDrawerActive: Boolean by remember { mutableStateOf(false) }
@@ -86,6 +89,10 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(key1 = screenActive != 10) {
                 uploadersViewModel.resetPage()
+            }
+
+            LaunchedEffect(key1 = screenActive != 4) {
+                categoryViewModel.resetPage()
             }
 
             UWallsTheme {
@@ -128,8 +135,8 @@ class MainActivity : ComponentActivity() {
                                 screenActive = screenActive,
                                 categoryViewModel = categoryViewModel,
                                 makeCategoryScreenActive = {
-                                    categoryViewModel.clearCategoryById()
-                                    categoryActive = it
+                                    categoryViewModel.resetPage()
+                                    categoryViewModel.getCategoryWallsData(it)
                                     screenActive = 4
                                 }
                             )
@@ -149,11 +156,13 @@ class MainActivity : ComponentActivity() {
                                 screenActive = screenActive
                             )
                             CategoryScreen(
+                                categoryViewModel = categoryViewModel,
                                 openDrawer = { isDrawerActive = it },
                                 isDrawerActive = isDrawerActive,
                                 screenActive = screenActive,
                                 category = category,
-                                loadingCategory = loadingCategory,
+                                categoryWallsCount = categoryWallsCount,
+                                loadingCategory = loadingCategoryWalls,
                                 makeCategoryWallScreenActive = { flag, index ->
                                     categoryWallScreenActive = flag
                                     categoryWallIndex = index
@@ -220,10 +229,9 @@ class MainActivity : ComponentActivity() {
                                 screenActive = screenActive,
                                 openScreen = { screenActive = it },
                                 makeCategoryScreenActive = {
-                                    categoryViewModel.clearCategoryById()
-                                    categoryActive = it
+                                    categoryViewModel.resetPage()
+                                    categoryViewModel.getCategoryWallsData(it)
                                     screenActive = 4
-                                    categoryViewModel.getCategoryById(it)
                                 },
                                 wallsViewModel = wallsViewModel
                             )
@@ -231,45 +239,52 @@ class MainActivity : ComponentActivity() {
                                 wallOfDayScreenActive = wallOfDayScreenActive,
                                 makeWallOfDayScreenActive = { wallOfDayScreenActive = it },
                                 wallsViewModel = wallsViewModel,
-                                categoryViewModel = categoryViewModel
+                                categoryViewModel = categoryViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             MostLikedWallScreen(
                                 mostLikedWallScreen = mostLikedScreenActive,
                                 makeMostLikedWallScreenActive = { mostLikedScreenActive = it },
                                 wallsViewModel = wallsViewModel,
-                                categoryViewModel = categoryViewModel
+                                categoryViewModel = categoryViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             MostDownloadedWallScreen(
                                 mostDownloadedWallScreenActive = mostDownloadedScreenActive,
                                 makeMostDownloadedWallScreenActive = { mostDownloadedScreenActive = it },
                                 wallsViewModel = wallsViewModel,
-                                categoryViewModel = categoryViewModel
+                                categoryViewModel = categoryViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             WallScreen(
                                 wallScreenActive = wallScreenActive,
                                 makeWallScreenActive = { wallScreenActive = it },
                                 wallsViewModel = wallsViewModel,
-                                categoryViewModel = categoryViewModel
+                                categoryViewModel = categoryViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             CategoryWallScreen(
                                 categoryWallScreenActive = categoryWallScreenActive,
                                 makeCategoryWallScreenActive = { categoryWallScreenActive = it },
                                 category = category,
                                 categoryWallIndex = categoryWallIndex,
-                                wallsViewModel = wallsViewModel
+                                wallsViewModel = wallsViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             FavouriteWallScreen(
                                 favouriteWallScreenActive = favouriteWallScreenActive,
                                 makeFavouriteWallScreenActive = { favouriteWallScreenActive = it },
                                 wallsViewModel = wallsViewModel,
-                                categoryViewModel = categoryViewModel
+                                categoryViewModel = categoryViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                             UploaderWallsScreen(
                                 uploaderWallScreenActive = uploaderWallScreenActive,
                                 makeUploaderWallScreenActive = { uploaderWallScreenActive = it },
                                 uploader = uploaderData,
                                 uploaderWallIndex = uploaderWallIndex,
-                                wallsViewModel = wallsViewModel
+                                wallsViewModel = wallsViewModel,
+                                uploadersViewModel = uploadersViewModel
                             )
                         } else {
                             PrivacyPolicy(acceptPrivacyPolicy = {

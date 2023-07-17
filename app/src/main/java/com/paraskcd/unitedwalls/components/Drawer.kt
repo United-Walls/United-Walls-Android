@@ -140,7 +140,7 @@ fun Drawer(
                         openDrawer(false)
                         openScreen(it)
                     },
-                    icon = painterResource(id = R.drawable.home),
+                    icon = painterResource(id = R.drawable.creator),
                     iconDescription = "Creators Icon",
                     title = "Creators",
                     screenActive = screenActive == 9 || screenActive == 10,

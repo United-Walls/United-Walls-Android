@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.repository
 
+import com.paraskcd.unitedwalls.data.DataAndCount
 import com.paraskcd.unitedwalls.data.DataOrException
 import com.paraskcd.unitedwalls.data.UnitedWallsDatabaseDao
 import com.paraskcd.unitedwalls.model.Category
@@ -10,6 +11,7 @@ import javax.inject.Inject
 class CategoryRepository @Inject constructor(private val api: CategoryApi, private val dao: UnitedWallsDatabaseDao) {
     private val allCategoriesDataOrException = DataOrException<ArrayList<Category>, Boolean, Exception>()
     private val categoryDataOrException = DataOrException<Category, Boolean, Exception>()
+    private val selectedCategoryDataOrException = DataOrException<DataAndCount<Category, Int>, Boolean, Exception>()
 
     suspend fun getCategories(): DataOrException<ArrayList<Category>, Boolean, java.lang.Exception> {
         try {
@@ -39,5 +41,20 @@ class CategoryRepository @Inject constructor(private val api: CategoryApi, priva
         }
 
         return categoryDataOrException
+    }
+
+    suspend fun getCategoryWallsPerPage(categoryId: String, currentPage: Int): DataOrException<DataAndCount<Category, Int>, Boolean, Exception> {
+        try {
+            selectedCategoryDataOrException.loading = true
+            selectedCategoryDataOrException.data = DataAndCount(api.getCategoryWalls(categoryId, currentPage), api.getWallCountCategory(categoryId))
+
+            if (selectedCategoryDataOrException.data.toString().isNotEmpty()) {
+                selectedCategoryDataOrException.loading = false
+            }
+        } catch (ex: Exception) {
+            selectedCategoryDataOrException.e = ex
+        }
+
+        return selectedCategoryDataOrException
     }
 }

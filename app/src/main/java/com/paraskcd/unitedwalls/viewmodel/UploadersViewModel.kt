@@ -32,7 +32,10 @@ class UploadersViewModel @Inject constructor(private val uploadersRepository: Up
     private val _uploaders = MutableLiveData<List<Uploader>>()
     private val _selectedUploader = MutableLiveData<Uploader?>()
     private val _totalWallsOfUploader = MutableLiveData<Int>()
+    private val _uploaderUsername = MutableLiveData<String>()
 
+    val uploaderUsername: LiveData<String>
+        get() = _uploaderUsername
     val uploaders: LiveData<List<Uploader>>
         get() = _uploaders
 
@@ -99,11 +102,6 @@ class UploadersViewModel @Inject constructor(private val uploadersRepository: Up
         }
     }
 
-    fun clearCategoryById() {
-        _loadingWalls.value = true
-        _selectedUploader.value = null
-    }
-
     fun getMoreUploaderWallsData(userId: String) {
         viewModelScope.launch {
             Log.d("Wallss", currentPage.value.toString())
@@ -119,6 +117,18 @@ class UploadersViewModel @Inject constructor(private val uploadersRepository: Up
                 }
                 _loadingWalls.value = false
                 currentPage.value += 1
+            }
+        }
+    }
+
+    fun getUploaderThroughWall(wallId: String) {
+        _uploaderUsername.value = ""
+        viewModelScope.launch {
+            uploaderData.value.loading = true
+            uploaderData.value = uploadersRepository.getUploaderByWallId(wallId)
+            if (uploaderData.value.data.toString().isNotEmpty()) {
+                uploaderData.value.loading = false
+                _uploaderUsername.value = uploaderData.value.data!!.data!!.username
             }
         }
     }

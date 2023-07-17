@@ -8,10 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
-import android.os.StrictMode
-import android.os.StrictMode.VmPolicy
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -23,10 +20,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -34,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,21 +38,15 @@ import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.PermissionRequired
 import com.google.accompanist.permissions.rememberPermissionState
-import com.mxalbert.zoomable.OverZoomConfig
-import com.mxalbert.zoomable.rememberZoomableState
 import com.paraskcd.unitedwalls.R
 import com.paraskcd.unitedwalls.components.WallpaperBackground
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
-import com.paraskcd.unitedwalls.model.FavouriteWallsTable
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.UploadersViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.SnapOffsets
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
 import kotlinx.coroutines.launch
-import java.io.File
 import java.io.IOException
 import java.util.*
 import kotlin.concurrent.schedule
@@ -66,7 +55,7 @@ import kotlin.concurrent.schedule
     ExperimentalPermissionsApi::class
 )
 @Composable
-fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
+fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel, uploadersViewModel: UploadersViewModel) {
     val lazyListState = rememberLazyListState()
     val walls = wallsViewModel.walls.observeAsState().value
     val wallIndex = wallsViewModel.selectedWallIndex.value
@@ -78,11 +67,28 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
     var infoState: Boolean by remember { mutableStateOf(false) }
     val categories = categoryViewModel.categories.observeAsState().value
     val storagePermission = rememberPermissionState(permission = android.Manifest.permission.READ_EXTERNAL_STORAGE)
+    val username = uploadersViewModel.uploaderUsername.observeAsState().value
+    var thumbnailBackground: String? by remember { mutableStateOf(null) }
 
     LaunchedEffect(key1 = wallScreenActive) {
         Timer().schedule(0) {
             coroutineScope.launch {
                 lazyListState.scrollToItem(index = wallIndex)
+                if (walls != null) {
+                    uploadersViewModel.getUploaderThroughWall(walls[wallIndex]._id)
+                    thumbnailBackground = walls[wallIndex].thumbnail_url
+                }
+            }
+        }
+    }
+    
+    LaunchedEffect(key1 = lazyListState.firstVisibleItemIndex) {
+        Timer().schedule(0) {
+            coroutineScope.launch {
+                if (walls != null) {
+                    uploadersViewModel.getUploaderThroughWall(walls[lazyListState.firstVisibleItemIndex]._id)
+                    thumbnailBackground = walls[lazyListState.firstVisibleItemIndex].thumbnail_url
+                }
             }
         }
     }
@@ -102,6 +108,36 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
+            if (thumbnailBackground != null) {
+                WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
+            }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
+                        )
+                    )
+                ) {
+                    IconButton(onClick = {
+                        makeWallScreenActive(false)
+                    }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.arrow),
+                            contentDescription = "Arrow",
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .size(18.dp),
+                            colorFilter = ColorFilter.tint(color = Color.White)
+                        )
+                    }
+                }
+
+            }
             LazyRow(
                 modifier = Modifier.padding(vertical = 32.dp),
                 state = lazyListState,
@@ -148,7 +184,7 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     category?.let {
-                                        Text(text = category)
+                                        Text(text = category, color = Color.White)
                                     }
                                     WallpaperScreenImage(
                                         imageURL = fileURL,
@@ -185,23 +221,21 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                                             Text(text = " $wallName", modifier = Modifier
                                                 .padding(top = 12.dp, bottom = 6.dp))
                                         }
-                                        wall.addedBy?.let { addedBy ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .padding(start = 18.dp)
-                                                    .clip(
-                                                        RoundedCornerShape(
-                                                            bottomStart = 12.dp,
-                                                            bottomEnd = 12.dp
-                                                        )
+                                        Row(
+                                            modifier = Modifier
+                                                .padding(start = 18.dp)
+                                                .clip(
+                                                    RoundedCornerShape(
+                                                        bottomStart = 12.dp,
+                                                        bottomEnd = 12.dp
                                                     )
-                                                    .background(MaterialTheme.colorScheme.primary)
-                                                    .width(230.dp)
-                                            ) {
-                                                Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                                Text(text = " $addedBy", modifier = Modifier
-                                                    .padding(top = 6.dp, bottom = 12.dp))
-                                            }
+                                                )
+                                                .background(MaterialTheme.colorScheme.primary)
+                                                .width(230.dp)
+                                        ) {
+                                            Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
+                                            Text(text = " $username", modifier = Modifier
+                                                .padding(top = 6.dp, bottom = 12.dp))
                                         }
                                     }
                                 }
@@ -321,21 +355,6 @@ fun WallScreen(wallScreenActive: Boolean, makeWallScreenActive: (Boolean) -> Uni
                             }
                         }
                     }
-                }
-            }
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                IconButton(onClick = {
-                    makeWallScreenActive(false)
-                }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.arrow),
-                        contentDescription = "Arrow",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(18.dp)
-                    )
                 }
             }
         }

@@ -20,19 +20,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.imageLoader
+import com.paraskcd.unitedwalls.components.WallpaperBackground
 import com.paraskcd.unitedwalls.components.WallpaperScreenImage
 import com.paraskcd.unitedwalls.viewmodel.CategoryViewModel
+import com.paraskcd.unitedwalls.viewmodel.UploadersViewModel
 import com.paraskcd.unitedwalls.viewmodel.WallsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel) {
+fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (Boolean) -> Unit, wallsViewModel: WallsViewModel, categoryViewModel: CategoryViewModel, uploadersViewModel: UploadersViewModel) {
     val wallOfDay = wallsViewModel.wallOfTheDay.observeAsState().value
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -41,9 +45,18 @@ fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (
     var infoState: Boolean by remember { mutableStateOf(false) }
     val categories = categoryViewModel.categories.observeAsState().value
     val coroutineScope = rememberCoroutineScope()
+    val username = uploadersViewModel.uploaderUsername.observeAsState().value
+    var thumbnailBackground: String? by remember { mutableStateOf(null) }
 
     BackHandler(enabled = wallOfDayScreenActive) {
         makeWallOfDayScreenActive(false)
+    }
+
+    LaunchedEffect(key1 = wallOfDayScreenActive) {
+        if (wallOfDay != null) {
+            uploadersViewModel.getUploaderThroughWall(wallOfDay._id)
+            thumbnailBackground = wallOfDay.thumbnail_url
+        }
     }
 
     AnimatedVisibility(
@@ -57,6 +70,34 @@ fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
+            if (thumbnailBackground != null) {
+                WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
+            }
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
+                        )
+                    )
+                ) {
+                    IconButton(onClick = {
+                        makeWallOfDayScreenActive(false)
+                    }) {
+                        Image(
+                            painter = painterResource(id = com.paraskcd.unitedwalls.R.drawable.arrow),
+                            contentDescription = "Arrow",
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .size(18.dp)
+                        )
+                    }
+                }
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -147,7 +188,7 @@ fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (
                                         .width(230.dp)
                                 ) {
                                     Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                    Text(text = " $addedBy", modifier = Modifier
+                                    Text(text = " $username", modifier = Modifier
                                         .padding(top = 6.dp, bottom = 12.dp))
                                 }
                             }
@@ -270,21 +311,6 @@ fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (
                             )
                         }
                     }
-                }
-            }
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                IconButton(onClick = {
-                    makeWallOfDayScreenActive(false)
-                }) {
-                    Image(
-                        painter = painterResource(id = com.paraskcd.unitedwalls.R.drawable.arrow),
-                        contentDescription = "Arrow",
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(18.dp)
-                    )
                 }
             }
         }
