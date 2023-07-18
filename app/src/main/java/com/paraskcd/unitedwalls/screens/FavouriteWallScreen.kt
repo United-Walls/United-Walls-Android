@@ -6,12 +6,15 @@ import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -46,7 +49,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.concurrent.schedule
 
-@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class)
+@OptIn(ExperimentalSnapperApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun FavouriteWallScreen(
     favouriteWallScreenActive: Boolean,
@@ -55,7 +58,6 @@ fun FavouriteWallScreen(
     categoryViewModel: CategoryViewModel,
     uploadersViewModel: UploadersViewModel
 ) {
-    val lazyListState = rememberLazyListState()
     val walls = wallsViewModel.favouritePopulatedWallsStore
     val wallIndex = wallsViewModel.selectedFavouriteWallIndex.value
     val configuration = LocalConfiguration.current
@@ -64,14 +66,14 @@ fun FavouriteWallScreen(
     val context = LocalContext.current
     val favouriteWalls = wallsViewModel.favouriteWalls.collectAsState().value
     var infoState: Boolean by remember { mutableStateOf(false) }
-    val categories = categoryViewModel.categories.observeAsState().value
     val username = uploadersViewModel.uploaderUsername.observeAsState().value
     var thumbnailBackground: String? by remember { mutableStateOf(null) }
+    val pagerState = rememberPagerState( pageCount = { walls?.size ?: 0 }, initialPage = wallIndex )
 
     LaunchedEffect(key1 = favouriteWallScreenActive) {
         Timer().schedule(0) {
             coroutineScope.launch {
-                lazyListState.scrollToItem(index = wallIndex)
+                pagerState.scrollToPage(wallIndex)
                 if (walls.isNotEmpty()) {
                     uploadersViewModel.getUploaderThroughWall(walls[wallIndex]._id)
                     thumbnailBackground = walls[wallIndex].thumbnail_url
@@ -80,12 +82,12 @@ fun FavouriteWallScreen(
         }
     }
 
-    LaunchedEffect(key1 = lazyListState.firstVisibleItemIndex) {
+    LaunchedEffect(key1 = pagerState.currentPage) {
         Timer().schedule(0) {
             coroutineScope.launch {
                 if (walls.isNotEmpty()) {
-                    uploadersViewModel.getUploaderThroughWall(walls[lazyListState.firstVisibleItemIndex]._id)
-                    thumbnailBackground = walls[lazyListState.firstVisibleItemIndex].thumbnail_url
+                    uploadersViewModel.getUploaderThroughWall(walls[pagerState.currentPage]._id)
+                    thumbnailBackground = walls[pagerState.currentPage].thumbnail_url
                 }
             }
         }
@@ -106,7 +108,7 @@ fun FavouriteWallScreen(
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
-            if (thumbnailBackground != null) {
+            if (thumbnailBackground != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
             }
             Column(
@@ -120,54 +122,34 @@ fun FavouriteWallScreen(
                             colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
                         )
                     )
-                ) {
-                    IconButton(onClick = {
-                        makeFavouriteWallScreenActive(false)
-                    }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.arrow),
-                            contentDescription = "Arrow",
-                            modifier = Modifier
-                                .padding(6.dp)
-                                .size(18.dp)
-                        )
-                    }
-                }
-            }
-            LazyRow(
-                modifier = Modifier.padding(vertical = 32.dp),
-                state = lazyListState,
-                flingBehavior = rememberSnapperFlingBehavior(
-                    lazyListState = lazyListState,
-                    snapOffsetForItem = SnapOffsets.Center,
                 )
-            ) {
-                itemsIndexed(walls) { index, wall ->
-                    wall.file_url?.let { fileURL ->
-                        val wallName = wall.file_name.replace('_', ' ')
-                        var category: String? = null
+            }
+            walls?.size?.let {
+                HorizontalPager(state = pagerState) { page ->
+                    val wall = walls[page]
+                    val wallName = wall.file_name.replace('_', ' ')
+                    var liked: Boolean by remember { mutableStateOf(false) }
 
-                        if (categories != null) {
-                            for (cat in categories) {
-                                if (cat._id == wall.category) {
-                                    category = cat.name
-                                    break
-                                }
+                    if (favouriteWalls.isNotEmpty()) {
+                        for (wallF in favouriteWalls) {
+                            if (wallF.wallpaperId == wall._id) {
+                                liked = true
+                                break
                             }
                         }
+                    }
 
+                    wall.file_url?.let { fileURL ->
                         Box(
                             modifier = Modifier
-                                .fillMaxHeight(),
+                                .fillMaxSize(),
                             contentAlignment = Alignment.BottomEnd
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(top = 10.dp)
                             ) {
-                                category?.let {
-                                    Text(text = category)
-                                }
                                 WallpaperScreenImage(
                                     imageURL = fileURL,
                                     imageDescription = wall.file_name,
@@ -199,27 +181,45 @@ fun FavouriteWallScreen(
                                             .background(MaterialTheme.colorScheme.primary)
                                             .width(230.dp)
                                     ) {
-                                        Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 6.dp))
-                                        Text(text = " $wallName", modifier = Modifier
-                                            .padding(top = 12.dp, bottom = 6.dp))
+                                        Text(
+                                            text = "Name -",
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(
+                                                start = 12.dp,
+                                                top = 12.dp,
+                                                bottom = 6.dp
+                                            )
+                                        )
+                                        Text(
+                                            text = " $wallName", modifier = Modifier
+                                                .padding(top = 12.dp, bottom = 6.dp)
+                                        )
                                     }
-                                    wall.addedBy?.let { addedBy ->
-                                        Row(
-                                            modifier = Modifier
-                                                .padding(start = 18.dp)
-                                                .clip(
-                                                    RoundedCornerShape(
-                                                        bottomStart = 12.dp,
-                                                        bottomEnd = 12.dp
-                                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(start = 18.dp)
+                                            .clip(
+                                                RoundedCornerShape(
+                                                    bottomStart = 12.dp,
+                                                    bottomEnd = 12.dp
                                                 )
-                                                .background(MaterialTheme.colorScheme.primary)
-                                                .width(230.dp)
-                                        ) {
-                                            Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                            Text(text = " $username", modifier = Modifier
-                                                .padding(top = 6.dp, bottom = 12.dp))
-                                        }
+                                            )
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .width(230.dp)
+                                    ) {
+                                        Text(
+                                            text = "Added By -",
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(
+                                                start = 12.dp,
+                                                top = 6.dp,
+                                                bottom = 12.dp
+                                            )
+                                        )
+                                        Text(
+                                            text = " $username", modifier = Modifier
+                                                .padding(top = 6.dp, bottom = 12.dp)
+                                        )
                                     }
                                 }
                             }
@@ -247,26 +247,49 @@ fun FavouriteWallScreen(
                                 }
                                 IconButton(
                                     onClick = {
-                                        for (wallF in favouriteWalls) {
-                                            if (wall._id == wallF.wallpaperId) {
-                                                wallsViewModel.removeWallFromFavourites(wallF)
-                                                Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
-                                                wallsViewModel.getPopulatedFavouriteWalls()
-                                                coroutineScope.launch {
-                                                    wallsViewModel.addToServer(wall._id, "removeFav")
+                                        if (!liked) {
+                                            wallsViewModel.addWallToFavourites(wall._id)
+                                            liked = true
+                                            Toast.makeText(
+                                                context,
+                                                "Wallpaper added to your Favourites! :)",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            wallsViewModel.getPopulatedFavouriteWalls()
+                                            coroutineScope.launch {
+                                                wallsViewModel.addToServer(wall._id, "addFav")
+                                            }
+                                        } else {
+                                            for (wallF in favouriteWalls) {
+                                                if (wall._id == wallF.wallpaperId) {
+                                                    wallsViewModel.removeWallFromFavourites(wallF)
+                                                    liked = false
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Wallpaper removed from your Favourites! :)",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                    wallsViewModel.getPopulatedFavouriteWalls()
+                                                    coroutineScope.launch {
+                                                        wallsViewModel.addToServer(
+                                                            wall._id,
+                                                            "removeFav"
+                                                        )
+                                                    }
+                                                    break
                                                 }
-                                                break
                                             }
                                         }
                                     },
-                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    modifier = Modifier
                                         .width(40.dp)
                                         .height(40.dp)
                                         .padding(bottom = 6.dp)
                                         .alpha(0.50f)
                                 ) {
                                     Image(
-                                        painter = painterResource(id = R.drawable.heartfilled),
+                                        painter = painterResource(id = if (!liked) R.drawable.heart else R.drawable.heartfilled),
                                         contentDescription = "Favourite",
                                         modifier = Modifier
                                             .padding(6.dp)
@@ -276,15 +299,29 @@ fun FavouriteWallScreen(
                                 IconButton(
                                     onClick = {
                                         val shareIntent: Intent = Intent(Intent.ACTION_SEND)
-                                        context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
-                                            val imageFile = snapshot.data.toFile()
-                                            shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
-                                            shareIntent.setType("image/jpeg");
-                                            shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name))
-                                        }
+                                        context.imageLoader.diskCache?.get(wall.file_url)
+                                            ?.use { snapshot ->
+                                                val imageFile = snapshot.data.toFile()
+                                                shareIntent.putExtra(
+                                                    Intent.EXTRA_TEXT,
+                                                    "Check this amazing Wallpaper from the United Walls App! :)"
+                                                );
+                                                shareIntent.setType("image/jpeg");
+                                                shareIntent.putExtra(
+                                                    Intent.EXTRA_STREAM,
+                                                    saveBitmap(
+                                                        context = context,
+                                                        bitmap = BitmapFactory.decodeFile(imageFile.path),
+                                                        format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP,
+                                                        mimeType = wall.mime_type,
+                                                        displayName = wall.file_name
+                                                    )
+                                                )
+                                            }
                                         context.startActivity(shareIntent)
                                     },
-                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    modifier = Modifier
                                         .width(40.dp)
                                         .height(40.dp)
                                         .padding(bottom = 6.dp)
@@ -301,16 +338,31 @@ fun FavouriteWallScreen(
                                 // Download Button
                                 IconButton(
                                     onClick = {
-                                        context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
-                                            val imageFile = snapshot.data.toFile()
-                                            saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name)
-                                            Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
-                                            coroutineScope.launch {
-                                                wallsViewModel.addToServer(wall._id, "addDownloaded")
+                                        context.imageLoader.diskCache?.get(wall.file_url)
+                                            ?.use { snapshot ->
+                                                val imageFile = snapshot.data.toFile()
+                                                saveBitmap(
+                                                    context = context,
+                                                    bitmap = BitmapFactory.decodeFile(imageFile.path),
+                                                    format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP,
+                                                    mimeType = wall.mime_type,
+                                                    displayName = wall.file_name
+                                                )
+                                                Toast.makeText(
+                                                    context,
+                                                    "Wallpaper added to your Gallery! :)",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                coroutineScope.launch {
+                                                    wallsViewModel.addToServer(
+                                                        wall._id,
+                                                        "addDownloaded"
+                                                    )
+                                                }
                                             }
-                                        }
                                     },
-                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    modifier = Modifier
                                         .width(40.dp)
                                         .height(40.dp)
                                         .padding(bottom = 6.dp)
@@ -327,6 +379,26 @@ fun FavouriteWallScreen(
                             }
                         }
                     }
+                }
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(top = 50.dp, start = 30.dp)) {
+                IconButton(
+                    onClick = {
+                        makeFavouriteWallScreenActive(false)
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(40.dp)
+                        .alpha(0.50f)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.arrow),
+                        contentDescription = "Arrow",
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
+                    )
                 }
             }
         }

@@ -10,6 +10,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -64,7 +67,7 @@ import kotlinx.coroutines.launch
 import java.util.Timer
 import kotlin.concurrent.schedule
 
-@OptIn(ExperimentalSnapperApi::class)
+@OptIn(ExperimentalSnapperApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun UploaderWallsScreen(
     uploaderWallScreenActive: Boolean,
@@ -74,7 +77,6 @@ fun UploaderWallsScreen(
     wallsViewModel: WallsViewModel,
     uploadersViewModel: UploadersViewModel
 ) {
-    val lazyListState = rememberLazyListState()
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val coroutineScope = rememberCoroutineScope()
@@ -83,11 +85,12 @@ fun UploaderWallsScreen(
     var infoState: Boolean by remember { mutableStateOf(false) }
     val username = uploadersViewModel.uploaderUsername.observeAsState().value
     var thumbnailBackground: String? by remember { mutableStateOf(null) }
+    val pagerState = rememberPagerState( pageCount = { uploader?.walls?.size ?: 0 }, initialPage = uploaderWallIndex )
 
     LaunchedEffect(key1 = uploaderWallScreenActive) {
         Timer().schedule(0) {
             coroutineScope.launch {
-                lazyListState.scrollToItem(index = uploaderWallIndex)
+                pagerState.scrollToPage(uploaderWallIndex)
                 if (uploader != null) {
                     uploadersViewModel.getUploaderThroughWall(uploader.walls[uploaderWallIndex]._id)
                     thumbnailBackground = uploader.walls[uploaderWallIndex].thumbnail_url
@@ -96,12 +99,12 @@ fun UploaderWallsScreen(
         }
     }
 
-    LaunchedEffect(key1 = lazyListState.firstVisibleItemIndex) {
+    LaunchedEffect(key1 = pagerState.currentPage) {
         Timer().schedule(0) {
             coroutineScope.launch {
                 if (uploader != null) {
-                    uploadersViewModel.getUploaderThroughWall(uploader.walls[lazyListState.firstVisibleItemIndex]._id)
-                    thumbnailBackground = uploader.walls[lazyListState.firstVisibleItemIndex].thumbnail_url
+                    uploadersViewModel.getUploaderThroughWall(uploader.walls[pagerState.currentPage]._id)
+                    thumbnailBackground = uploader.walls[pagerState.currentPage].thumbnail_url
                 }
             }
         }
@@ -122,7 +125,7 @@ fun UploaderWallsScreen(
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
-            if (thumbnailBackground != null) {
+            if (thumbnailBackground != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
             }
             Column(
@@ -136,230 +139,222 @@ fun UploaderWallsScreen(
                             colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
                         )
                     )
-                ) {
-                    IconButton(onClick = {
-                        makeUploaderWallScreenActive(false)
-                    }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.arrow),
-                            contentDescription = "Arrow",
-                            modifier = Modifier
-                                .padding(6.dp)
-                                .size(18.dp)
-                        )
-                    }
-                }
-            }
-            LazyRow(
-                modifier = Modifier.padding(vertical = 32.dp),
-                state = lazyListState,
-                flingBehavior = rememberSnapperFlingBehavior(
-                    lazyListState = lazyListState,
-                    snapOffsetForItem = SnapOffsets.Center,
                 )
-            ) {
-                uploader?.let {
-                    items(it.walls.size) { index ->
-                        val wall = it.walls[index]
-                        val wallName = wall.file_name.replace('_', ' ')
+            }
+            uploader?.walls?.size?.let {
+                HorizontalPager(state = pagerState) { page ->
+                    val wall = uploader.walls[page]
+                    val wallName = wall.file_name.replace('_', ' ')
+                    var liked: Boolean by remember { mutableStateOf(false) }
 
-                        wall.file_url?.let { fileURL ->
-                            var liked: Boolean by remember {
-                                mutableStateOf(false)
+                    if (favouriteWalls.isNotEmpty()) {
+                        for (wallF in favouriteWalls) {
+                            if (wallF.wallpaperId == wall._id) {
+                                liked = true
+                                break
                             }
+                        }
+                    }
 
-                            if (favouriteWalls.isNotEmpty()) {
-                                for (wallF in favouriteWalls) {
-                                    if (wallF.wallpaperId == wall._id) {
-                                        liked = true
-                                        break
-                                    } else {
-                                        liked = false
-                                    }
-                                }
+                    wall.file_url?.let { fileURL ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.BottomEnd
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(top = 10.dp)
+                            ) {
+                                WallpaperScreenImage(
+                                    imageURL = fileURL,
+                                    imageDescription = wall.file_name,
+                                    width = screenWidth
+                                )
                             }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.BottomEnd
+                            AnimatedVisibility(
+                                visible = infoState,
+                                enter = fadeIn(),
+                                exit = fadeOut()
                             ) {
                                 Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
+                                    modifier = Modifier
+                                        .width(screenWidth)
+                                        .padding(bottom = 18.dp)
+                                        .alpha(0.85f)
                                 ) {
-                                    Text(text = uploader.username)
-                                    WallpaperScreenImage(
-                                        imageURL = fileURL,
-                                        imageDescription = wall.file_name,
-                                        width = screenWidth
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(start = 18.dp)
+                                            .clip(
+                                                RoundedCornerShape(
+                                                    topStart = 12.dp,
+                                                    topEnd = 12.dp,
+                                                    bottomStart = if (wall.addedBy == null) 12.dp else 0.dp,
+                                                    bottomEnd = if (wall.addedBy == null) 12.dp else 0.dp
+                                                )
+                                            )
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .width(230.dp)
+                                    ) {
+                                        Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 6.dp))
+                                        Text(text = " $wallName", modifier = Modifier
+                                            .padding(top = 12.dp, bottom = 6.dp))
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(start = 18.dp)
+                                            .clip(
+                                                RoundedCornerShape(
+                                                    bottomStart = 12.dp,
+                                                    bottomEnd = 12.dp
+                                                )
+                                            )
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .width(230.dp)
+                                    ) {
+                                        Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
+                                        Text(text = " $username", modifier = Modifier
+                                            .padding(top = 6.dp, bottom = 12.dp))
+                                    }
+                                }
+                            }
+                            Column(
+                                modifier = Modifier.padding(end = 24.dp, bottom = 24.dp)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        infoState = !infoState
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    modifier = Modifier
+                                        .width(40.dp)
+                                        .height(40.dp)
+                                        .padding(bottom = 6.dp)
+                                        .alpha(0.50f)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = if (!infoState) R.drawable.about else R.drawable.aboutfilled),
+                                        contentDescription = "Info",
+                                        modifier = Modifier
+                                            .padding(6.dp)
+                                            .size(40.dp)
                                     )
                                 }
-                                AnimatedVisibility(
-                                    visible = infoState,
-                                    enter = fadeIn(),
-                                    exit = fadeOut()
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .width(screenWidth)
-                                            .padding(bottom = 18.dp)
-                                            .alpha(0.85f)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .padding(start = 18.dp)
-                                                .clip(
-                                                    RoundedCornerShape(
-                                                        topStart = 12.dp,
-                                                        topEnd = 12.dp,
-                                                        bottomStart = if (wall.addedBy == null) 12.dp else 0.dp,
-                                                        bottomEnd = if (wall.addedBy == null) 12.dp else 0.dp
-                                                    )
-                                                )
-                                                .background(MaterialTheme.colorScheme.primary)
-                                                .width(230.dp)
-                                        ) {
-                                            Text(text = "Name -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 6.dp))
-                                            Text(text = " $wallName", modifier = Modifier
-                                                .padding(top = 12.dp, bottom = 6.dp))
-                                        }
-                                        wall.addedBy?.let { addedBy ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .padding(start = 18.dp)
-                                                    .clip(
-                                                        RoundedCornerShape(
-                                                            bottomStart = 12.dp,
-                                                            bottomEnd = 12.dp
-                                                        )
-                                                    )
-                                                    .background(MaterialTheme.colorScheme.primary)
-                                                    .width(230.dp)
-                                            ) {
-                                                Text(text = "Added By -", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp, top = 6.dp, bottom = 12.dp))
-                                                Text(text = " $username", modifier = Modifier
-                                                    .padding(top = 6.dp, bottom = 12.dp))
+                                IconButton(
+                                    onClick = {
+                                        if (!liked) {
+                                            wallsViewModel.addWallToFavourites(wall._id)
+                                            liked = true
+                                            Toast.makeText(context, "Wallpaper added to your Favourites! :)", Toast.LENGTH_LONG).show()
+                                            wallsViewModel.getPopulatedFavouriteWalls()
+                                            coroutineScope.launch {
+                                                wallsViewModel.addToServer(wall._id, "addFav")
                                             }
-                                        }
-                                    }
-                                }
-                                Column(
-                                    modifier = Modifier.padding(end = 24.dp, bottom = 24.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            infoState = !infoState
-                                        },
-                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                        modifier = Modifier
-                                            .width(40.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 6.dp)
-                                            .alpha(0.50f)
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = if (!infoState) R.drawable.about else R.drawable.aboutfilled),
-                                            contentDescription = "Info",
-                                            modifier = Modifier
-                                                .padding(6.dp)
-                                                .size(40.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            if (!liked) {
-                                                wallsViewModel.addWallToFavourites(wall._id)
-                                                liked = true
-                                                Toast.makeText(context, "Wallpaper added to your Favourites! :)", Toast.LENGTH_LONG).show()
-                                                wallsViewModel.getPopulatedFavouriteWalls()
-                                                coroutineScope.launch {
-                                                    wallsViewModel.addToServer(wall._id, "addFav")
-                                                }
-                                            } else {
-                                                for (wallF in favouriteWalls) {
-                                                    if (wall._id == wallF.wallpaperId) {
-                                                        wallsViewModel.removeWallFromFavourites(wallF)
-                                                        liked = false
-                                                        Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
-                                                        wallsViewModel.getPopulatedFavouriteWalls()
-                                                        coroutineScope.launch {
-                                                            wallsViewModel.addToServer(wall._id, "removeFav")
-                                                        }
-                                                        break
+                                        } else {
+                                            for (wallF in favouriteWalls) {
+                                                if (wall._id == wallF.wallpaperId) {
+                                                    wallsViewModel.removeWallFromFavourites(wallF)
+                                                    liked = false
+                                                    Toast.makeText(context, "Wallpaper removed from your Favourites! :)", Toast.LENGTH_LONG).show()
+                                                    wallsViewModel.getPopulatedFavouriteWalls()
+                                                    coroutineScope.launch {
+                                                        wallsViewModel.addToServer(wall._id, "removeFav")
                                                     }
+                                                    break
                                                 }
                                             }
-                                        },
-                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(40.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 6.dp)
-                                            .alpha(0.50f)
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = if (!liked) R.drawable.heart else R.drawable.heartfilled),
-                                            contentDescription = "Favourite",
-                                            modifier = Modifier
-                                                .padding(6.dp)
-                                                .size(40.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            val shareIntent: Intent = Intent(Intent.ACTION_SEND)
-                                            context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
-                                                val imageFile = snapshot.data.toFile()
-                                                shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
-                                                shareIntent.setType("image/jpeg");
-                                                shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name))
+                                        }
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                        .width(40.dp)
+                                        .height(40.dp)
+                                        .padding(bottom = 6.dp)
+                                        .alpha(0.50f)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = if (!liked) R.drawable.heart else R.drawable.heartfilled),
+                                        contentDescription = "Favourite",
+                                        modifier = Modifier
+                                            .padding(6.dp)
+                                            .size(40.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val shareIntent: Intent = Intent(Intent.ACTION_SEND)
+                                        context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
+                                            val imageFile = snapshot.data.toFile()
+                                            shareIntent.putExtra(Intent.EXTRA_TEXT, "Check this amazing Wallpaper from the United Walls App! :)");
+                                            shareIntent.setType("image/jpeg");
+                                            shareIntent.putExtra(Intent.EXTRA_STREAM, saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name))
+                                        }
+                                        context.startActivity(shareIntent)
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                        .width(40.dp)
+                                        .height(40.dp)
+                                        .padding(bottom = 6.dp)
+                                        .alpha(0.50f)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.share),
+                                        contentDescription = "Favourite",
+                                        modifier = Modifier
+                                            .padding(6.dp)
+                                            .size(40.dp)
+                                    )
+                                }
+                                // Download Button
+                                IconButton(
+                                    onClick = {
+                                        context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
+                                            val imageFile = snapshot.data.toFile()
+                                            saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name)
+                                            Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
+                                            coroutineScope.launch {
+                                                wallsViewModel.addToServer(wall._id, "addDownloaded")
                                             }
-                                            context.startActivity(shareIntent)
-                                        },
-                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(40.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 6.dp)
-                                            .alpha(0.50f)
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.share),
-                                            contentDescription = "Favourite",
-                                            modifier = Modifier
-                                                .padding(6.dp)
-                                                .size(40.dp)
-                                        )
-                                    }
-                                    // Download Button
-                                    IconButton(
-                                        onClick = {
-                                            context.imageLoader.diskCache?.get(wall.file_url)?.use { snapshot ->
-                                                val imageFile = snapshot.data.toFile()
-                                                saveBitmap(context = context, bitmap = BitmapFactory.decodeFile(imageFile.path), format = if (wall.mime_type == "image/jpeg") Bitmap.CompressFormat.JPEG else if (wall.mime_type == "image/png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.WEBP, mimeType = wall.mime_type, displayName = wall.file_name)
-                                                Toast.makeText(context, "Wallpaper added to your Gallery! :)", Toast.LENGTH_LONG).show()
-                                                coroutineScope.launch {
-                                                    wallsViewModel.addToServer(wall._id, "addDownloaded")
-                                                }
-                                            }
-                                        },
-                                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
-                                            .width(40.dp)
-                                            .height(40.dp)
-                                            .padding(bottom = 6.dp)
-                                            .alpha(0.50f)
-                                    ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.download),
-                                            contentDescription = "Favourite",
-                                            modifier = Modifier
-                                                .padding(6.dp)
-                                                .size(40.dp)
-                                        )
-                                    }
+                                        }
+                                    },
+                                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary), modifier = Modifier
+                                        .width(40.dp)
+                                        .height(40.dp)
+                                        .padding(bottom = 6.dp)
+                                        .alpha(0.50f)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.download),
+                                        contentDescription = "Favourite",
+                                        modifier = Modifier
+                                            .padding(6.dp)
+                                            .size(40.dp)
+                                    )
                                 }
                             }
                         }
                     }
+                }
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(top = 50.dp, start = 30.dp)) {
+                IconButton(
+                    onClick = {
+                        makeUploaderWallScreenActive(false)
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(40.dp)
+                        .alpha(0.50f)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.arrow),
+                        contentDescription = "Arrow",
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
+                    )
                 }
             }
         }
