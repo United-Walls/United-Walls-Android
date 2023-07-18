@@ -148,7 +148,7 @@ fun FavouriteWallScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(top = 10.dp)
+                                modifier = Modifier.padding(vertical = 10.dp)
                             ) {
                                 WallpaperScreenImage(
                                     imageURL = fileURL,

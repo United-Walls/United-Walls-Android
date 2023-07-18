@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.paraskcd.unitedwalls.components.NetworkImage
 import com.paraskcd.unitedwalls.components.Screen
@@ -102,10 +104,12 @@ fun Uploaders(
                                         size = 24.dp,
                                         shape = CircleShape
                                     )
-                                    Text(text = uploader.username, fontWeight = FontWeight.Bold)
+                                    Text(text = uploader.username, fontWeight = FontWeight.Bold, modifier = Modifier.width(110.dp), maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis)
                                 }
                             } else {
-                                Text(text = uploader.username, fontWeight = FontWeight.Bold)
+                                Text(text = uploader.username, fontWeight = FontWeight.Bold, maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }

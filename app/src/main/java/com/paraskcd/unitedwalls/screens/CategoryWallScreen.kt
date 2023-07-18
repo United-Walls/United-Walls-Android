@@ -120,19 +120,7 @@ fun CategoryWallScreen(
                             colors = listOf(MaterialTheme.colorScheme.primary, Color.Transparent)
                         )
                     )
-                ) {
-                    IconButton(onClick = {
-                        makeCategoryWallScreenActive(false)
-                    }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.arrow),
-                            contentDescription = "Arrow",
-                            modifier = Modifier
-                                .padding(6.dp)
-                                .size(18.dp)
-                        )
-                    }
-                }
+                )
             }
             category?.walls?.size?.let {
                 HorizontalPager(state = pagerState) { page ->
@@ -158,7 +146,7 @@ fun CategoryWallScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(top = 10.dp)
+                                modifier = Modifier.padding(vertical = 10.dp)
                             ) {
                                 WallpaperScreenImage(
                                     imageURL = fileURL,
