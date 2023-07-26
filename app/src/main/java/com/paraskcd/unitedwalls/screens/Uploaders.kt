@@ -1,5 +1,6 @@
 package com.paraskcd.unitedwalls.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,10 @@ fun Uploaders(
 ) {
     val uploaders = uploadersViewModel.uploaders.observeAsState().value
     val loadingUploaders = uploadersViewModel.loadingUploaders.observeAsState().value
+
+    LaunchedEffect(key1 = screenActive == 9) {
+        Log.d("Uploaders", uploaders.toString())
+    }
 
     Screen(
         openDrawer = openDrawer,
