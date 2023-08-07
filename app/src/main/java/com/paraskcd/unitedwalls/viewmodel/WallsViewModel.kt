@@ -116,7 +116,7 @@ class WallsViewModel @Inject constructor(private val wallsRepository: WallsRepos
 
     fun getWallOfTheDay() {
         viewModelScope.launch {
-            _wallOfTheDay.value = WallsItem(0, "", "", "", "", "", "", "", "", "", "", "")
+            _wallOfTheDay.value = WallsItem(0, "", "", "", "", "", "", "", "", "", "", "", "")
             wallOfTheDayData.value.loading = true
             wallOfTheDayData.value = wallsRepository.getWallOfDay()
             if (wallOfTheDayData.value.data.toString().isNotEmpty()) {

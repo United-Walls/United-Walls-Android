@@ -12,5 +12,6 @@ data class WallsItem(
     val thumbnail_url: String?,
     val mime_type: String,
     val updatedAt: String,
-    val addedBy: String?
+    val addedBy: String?,
+    val creator: String
 )

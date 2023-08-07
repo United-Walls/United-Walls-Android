@@ -3,6 +3,7 @@ package com.paraskcd.unitedwalls.components
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -57,6 +58,43 @@ fun NetworkImage(imageURL: String, imageDescription: String, size: Dp, shape: Sh
                 .clip(shape)
                 .size(size)
                 .background(MaterialTheme.colorScheme.tertiary)
+        )
+
+        if(painter.state is AsyncImagePainter.State.Loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
+@Composable
+fun NetworkImageWithBorder(imageURL: String, imageDescription: String, size: Dp, shape: Shape) {
+    val context = LocalContext.current
+
+    val painter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(context = context).data(imageURL).diskCacheKey(imageURL)
+            .memoryCacheKey(imageURL).build(),
+        imageLoader = ImageLoader.Builder(context = context).components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }.crossfade(true).build()
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        Image(
+            painter = painter,
+            contentDescription = imageDescription,
+            modifier = Modifier
+                .clip(shape)
+                .size(size)
+                .background(MaterialTheme.colorScheme.tertiary, shape = shape)
+                .border(8.dp, MaterialTheme.colorScheme.primary, shape = shape)
+                .shadow(20.dp, shape = shape)
         )
 
         if(painter.state is AsyncImagePainter.State.Loading) {

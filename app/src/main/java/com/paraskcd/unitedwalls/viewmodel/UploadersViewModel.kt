@@ -110,7 +110,7 @@ class UploadersViewModel @Inject constructor(private val uploadersRepository: Up
             if(uploaderData.value.data.toString().isNotEmpty()) {
                 uploaderData.value.loading = false
                 _selectedUploader.value = Uploader(__v = _selectedUploader.value!!.__v, _id = _selectedUploader.value!!._id, userID = _selectedUploader.value!!.userID, username = _selectedUploader.value!!.username, avatar_file_url = _selectedUploader.value!!.avatar_file_url, avatar_mime_type = _selectedUploader.value!!.avatar_mime_type, avatar_uuid = _selectedUploader.value!!.avatar_uuid, walls = _selectedUploader.value!!.walls.plus(
-                    uploaderData.value.data!!.data!!.walls))
+                    uploaderData.value.data!!.data!!.walls), description = _selectedUploader.value!!.description, socialMediaLinks = _selectedUploader.value!!.socialMediaLinks, donationLinks = _selectedUploader.value!!.donationLinks)
                 Log.d("Selected Uploader More Data", _selectedUploader.value!!.walls.toString())
                 uploaderData.value.e?.localizedMessage?.let {
                     Log.d("WallsError", it)
