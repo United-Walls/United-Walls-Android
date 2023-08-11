@@ -248,7 +248,7 @@ fun UploaderScreen(
                                 (uploader.donationLinks.patreon != "" || uploader.donationLinks.paypal != "" || !uploader.donationLinks.otherdonations.isNullOrEmpty()))) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Row(Modifier.padding(horizontal = 15.dp, vertical = 5.dp), horizontalArrangement = Arrangement.Start) {
-                                Text(text = "Social Links", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Donation Links", fontSize = 24.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 

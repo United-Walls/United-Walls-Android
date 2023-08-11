@@ -70,7 +70,7 @@ fun WallOfDayScreen(wallOfDayScreenActive: Boolean, makeWallOfDayScreenActive: (
                 .background(color = MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.BottomEnd
         ) {
-            if (thumbnailBackground != null) {
+            if (thumbnailBackground != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 WallpaperBackground(imageURL = thumbnailBackground!!, imageDescription = thumbnailBackground!!)
             }
             Column(

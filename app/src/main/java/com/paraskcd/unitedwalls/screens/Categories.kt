@@ -31,7 +31,7 @@ fun Categories(
     categoryViewModel: CategoryViewModel,
     makeCategoryScreenActive: (id: String) -> Unit
 ) {
-    val categories = categoryViewModel.categories.observeAsState().value
+    val categories = categoryViewModel.categories.observeAsState().value?.filter { it.walls.isNullOrEmpty().not() }
     val loadingCategories = categoryViewModel.loadingCategories.observeAsState().value
 
     Screen(
@@ -63,31 +63,33 @@ fun Categories(
                 items(it) { index ->
                     val category = categories[index]
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .padding(12.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                makeCategoryScreenActive(category._id)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        category.walls[0].thumbnail_url?.let { fileURL ->
-                            WallpaperImage(
-                                imageURL = fileURL,
-                                imageDescription = category.walls[0].file_name,
-                                height = 100.dp
-                            )
-                        }
+                    if (category.walls.isNotEmpty()) {
                         Box(
                             modifier = Modifier
-                            .alpha(0.50F)
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.primary)
-                        )
-                        Text(text = category.name, fontWeight = FontWeight.Bold)
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    makeCategoryScreenActive(category._id)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            category.walls[0].thumbnail_url?.let { fileURL ->
+                                WallpaperImage(
+                                    imageURL = fileURL,
+                                    imageDescription = category.walls[0].file_name,
+                                    height = 100.dp
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .alpha(0.50F)
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
+                            Text(text = category.name, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

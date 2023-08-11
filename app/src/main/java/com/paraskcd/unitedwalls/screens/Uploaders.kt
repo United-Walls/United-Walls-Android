@@ -43,7 +43,7 @@ fun Uploaders(
     uploadersViewModel: UploadersViewModel,
     makeUploadersScreenActive: (id: String) -> Unit
 ) {
-    val uploaders = uploadersViewModel.uploaders.observeAsState().value
+    val uploaders = uploadersViewModel.uploaders.observeAsState().value?.filter { it.walls.isNullOrEmpty().not() }
     val loadingUploaders = uploadersViewModel.loadingUploaders.observeAsState().value
 
     LaunchedEffect(key1 = screenActive == 9) {
@@ -76,19 +76,18 @@ fun Uploaders(
             uploaders?.size?.let {
                 items(it) { index ->
                     val uploader = uploaders[index]
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .padding(12.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                makeUploadersScreenActive(uploader._id)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (uploader.walls.isNotEmpty()) {
+                    if (uploader.walls.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp)
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    makeUploadersScreenActive(uploader._id)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
                             uploader.walls[0].thumbnail_url?.let { fileURL ->
                                 WallpaperImage(
                                     imageURL = fileURL,
@@ -119,6 +118,7 @@ fun Uploaders(
                             }
                         }
                     }
+
                 }
             }
             item {
